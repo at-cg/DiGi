@@ -66,7 +66,7 @@ def extract_nodes_generic(sequence, bed_path, out, node_start):
                 
             parts = line.strip().split("\t")
             if len(parts) > 6:
-                boundary = int(parts[6])  # col7 (6th index) acts as the continuous breakpoint/recombination hotspot
+                boundary = int(parts[6])  # col7 (6th index) acts as the continuous breakpoint/junction
                 
                 # Create node from current position up to the boundary (seq[s:e])
                 written += write_node(out, node_start, written, sequence, start, boundary)
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     with open(out_path, "w") as out:
         for h in headers:
             fasta_file = os.path.join(fasta_folder, f"{h}.fa")
-            bed_file = os.path.join(bed_folder, f"{h}/{h}_hotspots_lifted_final.bed") # *** extract bed files in one folder
+            bed_file = os.path.join(bed_folder, f"{h}/{h}_junctions_lifted_final.bed") # *** extract bed files in one folder
 
             if not os.path.exists(fasta_file):
                 print(f"!! Missing FASTA file: {fasta_file}")

@@ -1,6 +1,6 @@
 # Build DiGi's C++ tools into bin/
 #   make         node k-mer and KMC k-mer set samplers (no Gurobi needed)
-#   make ilp     ILP solver (needs GUROBI_HOME, e.g. .../gurobi1300/linux64)
+#   make iqp     IQP solver (needs GUROBI_HOME, e.g. .../gurobi1300/linux64)
 #   make clean   remove bin/
 
 CXX      ?= g++
@@ -11,7 +11,7 @@ GRB_LIB = $(patsubst lib%.so,%,$(notdir $(firstword $(wildcard $(GUROBI_HOME)/li
 
 all: bin/node_kmers_gen bin/kmer_set_sampling
 
-ilp: bin/dip_ilp
+iqp: bin/dip_iqp
 
 bin/node_kmers_gen: src/graph/node_kmers_gen.cpp | bin
 	$(CXX) $(CXXFLAGS) $< -o $@
@@ -19,7 +19,7 @@ bin/node_kmers_gen: src/graph/node_kmers_gen.cpp | bin
 bin/kmer_set_sampling: src/kmer_sampling/kmer_set_sampling.cpp | bin
 	$(CXX) $(CXXFLAGS) $< -o $@
 
-bin/dip_ilp: src/ilp/dip_main_recomb.cpp | bin
+bin/dip_iqp: src/iqp/dip_main_recomb.cpp | bin
 	@test -n "$(GUROBI_HOME)" || { echo "set GUROBI_HOME to your Gurobi install" >&2; exit 1; }
 	@test -n "$(GRB_LIB)" || { echo "no libgurobi*.so in $(GUROBI_HOME)/lib" >&2; exit 1; }
 	$(CXX) $(CXXFLAGS) $< -o $@ -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib \
@@ -31,4 +31,4 @@ bin:
 clean:
 	rm -rf bin
 
-.PHONY: all ilp clean
+.PHONY: all iqp clean

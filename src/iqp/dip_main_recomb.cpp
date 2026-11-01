@@ -322,7 +322,7 @@ int main(int argc, char *argv[]){
         }
 
         GRBEnv env(true);
-        env.set("LogFile", "dip_ilp.log");
+        env.set("LogFile", "dip_iqp.log");
 
         const int max_attempts = 3;
         for (int attempt = 1; attempt <= max_attempts; ++attempt) {
@@ -418,7 +418,7 @@ int main(int argc, char *argv[]){
             std::cout << "Recombination cap: at most " << R << " per haplotype (W = 1/2 per hub edge)\n";
         }
 
-        std::cout << "Optimizing ILP Model...\n";
+        std::cout << "Optimizing IQP Model...\n";
         model.set(GRB_IntParam_PoolSearchMode, 0);
         model.set(GRB_IntParam_PoolSolutions, 1);
         model.optimize();

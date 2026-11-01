@@ -1,24 +1,24 @@
 # Example: HG002 MHC at 10x
 
 Infers the two MHC haplotypes of HG002 from 10x Illumina reads, using a small
-graph of 18 HGSVC haplotypes cut at a hotspot every 10 kb.
+graph of 18 HGSVC haplotypes cut at a junction every 10 kb.
 
 ```bash
 conda env create -f environment.yml && conda activate digi
 make            # k-mer samplers
-make ilp        # ILP solver, needs GUROBI_HOME and a Gurobi license
+make iqp        # IQP solver, needs GUROBI_HOME and a Gurobi license
 bash example/run_example.sh
 ```
 
 Everything is written to `example/work/`. The inferred haplotypes are
-`example/work/inferred/HG002_{1,2}_c1-6.5127_c2-4.0225_R-10_*.fa`.
+`example/work/inferred/HG002_{1,2}_c1-6.5127_c2-4.0225_R-10_*.fa`. Expect a runtime of 5 minutes on a single CPU core.
 
 ## Data
 
 | File | Contents |
 |---|---|
-| `data/HGSVC_MHC_panel_18hap_grid10kb.tar.xz` | `panel/<hap>.fa`: MHC sequences of the 18 HGSVC haplotypes that HG002's inferred haplotypes are built from when run against the full 108-haplotype panel. `liftover/<hap>/<hap>_hotspots_lifted_final.bed`: 438 1-bp hotspots, one every 10 kb of GRCh38 MHC, lifted to each haplotype. |
-| `data/HG002.MHC_R{1,2}.10x.fastq.gz` | HG002 NIST Ashkenazi trio Illumina 2x250 bp reads. Pairs with both mates aligned to GRCh38 chr6:28510125-33480577, downsampled (seqtk, seed 100) to 10x MHC depth. |
+| `data/HGSVC_MHC_panel_18hap_grid10kb.tar.xz` | `panel/<hap>.fa`: MHC sequences of the 18 HGSVC haplotypes. `liftover/<hap>/<hap>_junctions_lifted_final.bed`: 438 1-bp junctions, one every 10 kb of GRCh38 MHC, lifted to each haplotype. |
+| `data/HG002.MHC_R{1,2}.10x.fastq.gz` | HG002 NIST Ashkenazi trio Illumina 2x250 bp reads. Pairs with both mates aligned to GRCh38 chr6:28510125-33480577, downsampled to 10x MHC depth. |
 
 ## Settings
 
