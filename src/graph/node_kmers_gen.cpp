@@ -97,22 +97,18 @@ std::string get_canonical(const std::string& kmer) {
         switch (c) {
 
             case 'A':
-            case 'a':
                 c = 'T';
                 break;
 
             case 'C':
-            case 'c':
                 c = 'G';
                 break;
 
             case 'G':
-            case 'g':
                 c = 'C';
                 break;
 
             case 'T':
-            case 't':
                 c = 'A';
                 break;
         }

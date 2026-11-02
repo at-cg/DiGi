@@ -3,7 +3,7 @@
 # Quality-filter MHC-filtered paired-end reads and count their
 # FracMinHash-sampled k-mers.
 # Usage: bash process_reads.sh <R1.fastq[.gz]> <R2.fastq[.gz]> <sample> <out_dir>
-#   FRACTION (default 0.05), K (default 31), THREADS (default 8), KMC_MEM in GB
+#   FRACTION (default 0.05), K (default 31), THREADS (default 1), KMC_MEM in GB
 #   (default 16) and KMC_TMP (dir for KMC's bins/db, default <out_dir>) can be set
 #   as environment variables. Use the same FRACTION and K as the node k-mers.
 # -> <out_dir>/<sample>_R{1,2}.clean.fastq.gz, <sample>.fastp.{html,json},
@@ -17,7 +17,7 @@ SAMPLE="$3"
 OUTDIR="$4"
 fraction=${FRACTION:-0.05}
 k=${K:-31}
-threads=${THREADS:-8}
+threads=${THREADS:-1}
 kmc_mem=${KMC_MEM:-16}
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

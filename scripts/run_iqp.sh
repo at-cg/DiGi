@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Infer a sample's two MHC haplotypes with the recombination-capped IQP
-# (src/iqp/dip_main_recomb.cpp) from its read k-mers and the graph node k-mers.
+# (src/iqp/main.cpp) from its read k-mers and the graph node k-mers.
 # Usage: bash run_iqp.sh <graph_file> <node_kmers.tsv> <read_kmers.tsv> <sample> <out_dir>
 #   graph_file and node_kmers.tsv come from build_graph.sh (debug_<graph_file> must sit
 #   next to graph_file); read_kmers.tsv comes from process_reads.sh.

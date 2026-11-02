@@ -19,7 +19,7 @@ bin/node_kmers_gen: src/graph/node_kmers_gen.cpp | bin
 bin/kmer_set_sampling: src/kmer_sampling/kmer_set_sampling.cpp | bin
 	$(CXX) $(CXXFLAGS) $< -o $@
 
-bin/dip_iqp: src/iqp/dip_main_recomb.cpp | bin
+bin/dip_iqp: src/iqp/main.cpp | bin
 	@test -n "$(GUROBI_HOME)" || { echo "set GUROBI_HOME to your Gurobi install" >&2; exit 1; }
 	@test -n "$(GRB_LIB)" || { echo "no libgurobi*.so in $(GUROBI_HOME)/lib" >&2; exit 1; }
 	$(CXX) $(CXXFLAGS) $< -o $@ -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib \

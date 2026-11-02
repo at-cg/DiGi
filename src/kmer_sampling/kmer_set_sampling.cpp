@@ -4,7 +4,6 @@
 #include <cstring>
 #include <cstdint>
 
-//-----------------------------------------------------------------------------
 // Platform-specific
 #if defined(_MSC_VER)
 #define FORCE_INLINE __forceinline
@@ -62,33 +61,14 @@ uint32_t murmur3_32(const uint8_t* key, size_t len, uint32_t seed) {
     return hash;
 }
 
-// DNA Helper: write the reverse complement of kmer[0..len) into out
-// (same base mapping as src/graph/node_kmers_gen.cpp)
-void reverse_complement(const char* kmer, size_t len, std::string& out) {
-    out.resize(len);
-    for (size_t i = 0; i < len; ++i) {
-        char c = kmer[len - 1 - i];
-        switch (c) {
-            case 'A': c = 'T'; break;
-            case 'C': c = 'G'; break;
-            case 'G': c = 'C'; break;
-            case 'T': c = 'A'; break;
-            case 'a': c = 't'; break;
-            case 'c': c = 'g'; break;
-            case 'g': c = 'c'; break;
-            case 't': c = 'a'; break;
-        }
-        out[i] = c;
-    }
-}
-
 int main(int argc, char* argv[]) {
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0]
                   << " <fraction> <kmer_tsv> [output_tsv]\n"
                   << "  fraction : e.g. 0.001 keeps ~1/1000 of k-mers\n"
                   << "  kmer_tsv : input file with <kmer>\\t<count> per line "
-                     "(e.g. from `kmc_tools transform <db> dump`)\n";
+                     "(e.g. from `kmc_tools transform <db> dump`)\n"
+                  << "             k-mers must already be canonical (KMC default, i.e. no -b)\n";
         return 1;
     }
 
@@ -121,7 +101,6 @@ int main(int argc, char* argv[]) {
     const uint32_t seed = 0;    // matches node_kmers_gen.cpp, so read and node k-mer samples agree
 
     std::string line;
-    std::string rev_comp;   // reused buffer for reverse complements
     uint64_t total = 0, kept = 0;
     int expected_k = -1;
 
@@ -147,17 +126,13 @@ int main(int argc, char* argv[]) {
 
         ++total;
 
-        // Canonical form: lexicographic min of k-mer and its reverse complement
-        // (same rule as node_kmers_gen.cpp, so both tools hash identical strings)
-        reverse_complement(kmer_ptr, kmer_len, rev_comp);
-        const char* canon_ptr =
-            (rev_comp.compare(0, kmer_len, kmer_ptr, kmer_len) < 0)
-                ? rev_comp.data() : kmer_ptr;
-
-        uint32_t h = murmur3_32(reinterpret_cast<const uint8_t*>(canon_ptr),
+        // KMC (without -b) already emits canonical k-mers: the lexicographic min
+        // of the k-mer and its reverse complement under A<C<G<T, which is the
+        // same rule as get_canonical() in node_kmers_gen.cpp. Hash as-is.
+        uint32_t h = murmur3_32(reinterpret_cast<const uint8_t*>(kmer_ptr),
                                 kmer_len, seed);
         if (static_cast<double>(h) < threshold) {
-            out->write(canon_ptr, kmer_len);
+            out->write(kmer_ptr, kmer_len);
             *out << '\t' << count << '\n';
             ++kept;
         }

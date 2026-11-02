@@ -146,15 +146,8 @@ void processGraphKmers(const std::string& graph_file,
     }
 }
 
-// ===================== HAPLOTYPE NODE-COORDINATE LOADER =====================
-// Parses a debug-log-style file where each "row" of the lattice (one candidate
-// reference haplotype) is introduced by a "Processing ... (FASTA header: NAME)"
-// line, followed by exactly r+1 "Node k: start=S, end=E, length=L" lines giving
-// that haplotype's own coordinate range for lattice column k-1 (0-indexed).
-// Haplotype blocks are assumed to appear in the same order as lattice rows
-// 0..H-1. This lets us translate a solved path (a sequence of lattice node ids)
-// back into "which named haplotype was this segment copied from, and what
-// coordinate range on that haplotype does it span".
+// ------- Haplotype Node-Coordinate Loader --------
+
 struct HaplotypeCoords {
     std::string name;                                  // e.g. "HG00096#1#MHC"
     std::vector<std::pair<long long,long long>> seg;    // seg[col] = (start,end) for lattice column `col`
@@ -218,7 +211,6 @@ std::pair<int,int> latticeRowCol(int node_id, int H, int r, int sink) {
     return {row, col};
 }
 
-// ===================== MAIN =====================
 int main(int argc, char *argv[]){
     auto start = std::chrono::high_resolution_clock::now();
     std::string GRAPH_KMERS_FILE = "";
@@ -253,14 +245,14 @@ int main(int argc, char *argv[]){
         }
         else if (arg == "--H" && i + 1 < argc)      H = std::stoi(argv[++i]);
         else if (arg == "--r" && i + 1 < argc)      r = std::stoi(argv[++i]);
-        else if (arg == "--R" && i + 1 < argc)      R = std::stoi(argv[++i]);           // === NEW ===
+        else if (arg == "--R" && i + 1 < argc)      R = std::stoi(argv[++i]);  
         else if (arg == "--labels" && i + 1 < argc) LABEL_INPUT_FILE = argv[++i];
         else if (arg == "--sample" && i + 1 < argc) sample_name = argv[++i];
-        else if (arg == "--node_coords" && i + 1 < argc) NODE_COORDS_FILE = argv[++i]; // === NEW ===
-        else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];         // === NEW ===
-        else if (arg == "--cov" && i + 1 < argc)     cov_label = argv[++i];        // === NEW ===
-        else if (arg == "--rel_weights" && i + 1 < argc) rel_weights = argv[++i];  // === NEW ===
-        else if (arg == "--lockfile" && i + 1 < argc) lockfile_path = argv[++i];   // === NEW ===
+        else if (arg == "--node_coords" && i + 1 < argc) NODE_COORDS_FILE = argv[++i]; 
+        else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];  
+        else if (arg == "--cov" && i + 1 < argc)     cov_label = argv[++i];      
+        else if (arg == "--rel_weights" && i + 1 < argc) rel_weights = argv[++i];  
+        else if (arg == "--lockfile" && i + 1 < argc) lockfile_path = argv[++i]; 
     }
 
     if (GRAPH_KMERS_FILE.empty() || SK_FILE.empty() || H < 0 || r < 0) {

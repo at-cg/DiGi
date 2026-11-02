@@ -131,7 +131,7 @@ if __name__ == "__main__":
         included = load_included_samples(args.samples_included)
         before = len(headers)
         headers = [h for h in headers if h in included]
-        print(f"📋 samples_included filter: kept {len(headers)}/{before} haplotypes "
+        print(f"Samples_included filter: kept {len(headers)}/{before} haplotypes "
               f"based on {args.samples_included}")
 
         missing = included - set(headers)
@@ -170,4 +170,4 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Error in {h}: {e}")
 
-    print(f"\n🏁 Done. Total nodes written: {total}")
+    print(f"\n Done. Total nodes written: {total}")
