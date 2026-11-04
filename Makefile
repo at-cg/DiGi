@@ -26,7 +26,7 @@ bin/kmer_set_sampling: src/kmer_sampling/kmer_set_sampling.cpp | bin
 bin/dip_iqp: src/iqp/main.cpp | bin
 	@[ -d "$(GUROBI_HOME)" ] || [ "$(origin GUROBI_HOME)" != file ] \
 	  || { mkdir -p extra && curl -fL $(GUROBI_URL) | tar -xz -C extra; }
-	grb_lib=$$(basename "$$(ls "$(GUROBI_HOME)"/lib/libgurobi[0-9]*.so | head -1)" .so); \
+	grb_lib=$$(basename "$$(ls "$(GUROBI_HOME)"/lib/libgurobi[0-9]*.so | grep -v _light | head -1)" .so); \
 	test -n "$$grb_lib" && \
 	$(CXX) $(CXXFLAGS) $< -o $@ -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib \
 	  -Wl,-rpath,$(GUROBI_HOME)/lib -lgurobi_c++ -l$${grb_lib#lib} -lstdc++fs

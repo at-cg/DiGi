@@ -145,7 +145,7 @@ if __name__ == "__main__":
     with open(out_path, "w") as out:
         for h in headers:
             fasta_file = os.path.join(fasta_folder, f"{h}.fa")
-            bed_file = os.path.join(bed_folder, f"{h}/{h}_junctions_lifted_final.bed") # *** extract bed files in one folder
+            bed_file = os.path.join(bed_folder, f"{h}/{h}_junctions.bed") # *** extract bed files in one folder
 
             if not os.path.exists(fasta_file):
                 print(f"!! Missing FASTA file: {fasta_file}")

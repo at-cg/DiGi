@@ -11,6 +11,3 @@ dependencies:
   - make
   - fastp             # read quality filtering
   - kmc               # read k-mer counting
-  - nextflow          # runs nf-LO for liftover
-  - minimap2          # aligner used by nf-LO
-  - crossmap          # lifts junction BEDs through the chain files

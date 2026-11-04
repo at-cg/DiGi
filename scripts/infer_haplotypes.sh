@@ -4,10 +4,10 @@
 # and solve the IQP against the graph.
 # Usage: bash infer_haplotypes.sh <R1.fastq[.gz]> <R2.fastq[.gz]> <sample> <graph_dir> <out_dir> [R]
 #   R1, R2: paired-end reads filtered to the region of interest
-#   graph_dir: output folder of construct_graph.sh
+#   graph_dir: output folder of preprocess_graph.sh
 #   R: maximum switches between reference haplotypes per inferred haplotype (default 10)
 #   FRACTION, K, THREADS, C1 and C2 can be set as environment variables. Use the
-#   same FRACTION and K as construct_graph.sh.
+#   same FRACTION and K as preprocess_graph.sh.
 #   Needs bin/dip_iqp (make iqp) and a Gurobi license.
 # -> <out_dir>/<sample>_{1,2}_*.fa, <out_dir>/<sample>_{1,2}_*_haplotype_regions.tsv,
 #    <out_dir>/reads (filtered reads and read k-mers)
