@@ -20,14 +20,25 @@ The pipeline has two steps:
 
 A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo.
 
-| Step | Script | Input | Output |
-|---|---|---|---|
-| 1a | `tmp/liftover.sh <GRCh38.fa> <junctions.bed> <panel_dir> <out_dir>` | Reference FASTA, junction BED, directory of panel FASTAs, output directory | `<out_dir>/<hap>/<hap>_junctions.bed` |
-| 1b | `scripts/build_graph.sh <graph.yml>` | `<hap>.fa`, `<hap>/<hap>_junctions.bed` | `ref_graph.txt`, `node_kmers_<fraction>_k<k>.tsv` |
-| 2a | `scripts/process_reads.sh <R1> <R2> <sample> <out_dir>` | Paired-end FASTQ filtered to the region, sample name, output directory |<sample>_read_kmers_<fraction>_k<k>.tsv` |
-| 2b | `scripts/run_iqp.sh <graph> <reads_dir> <sample> <out_dir>` | Outputs of 1b and 2a | `<sample>_{1,2}_*.fa`, `<sample>_{1,2}_*_haplotype_regions.tsv` |
+```bash
+# 1a. Lift the junctions over to each panel assembly
+#     Output: <liftover_dir>/<hap>/<hap>_junctions.bed
+bash tmp/liftover.sh <GRCh38.fa> <junctions.bed> <panel_dir> <liftover_dir>
 
-In step 2b, `<graph>` is the `ref_graph.txt` from step 1b and `<reads_dir>` is the `<out_dir>` from step 2a. The k-mer files are found automatically from these paths.
+# 1b. Build the graph and sample its node k-mers
+#     Output: <graph_dir>/ref_graph.txt, <graph_dir>/node_kmers_<fraction>_k<k>.tsv
+bash scripts/build_graph.sh config/graph.yml
+
+# 2a. Filter the reads and sample their k-mers
+#     Output: <reads_dir>/<sample>_read_kmers_<fraction>_k<k>.tsv
+bash scripts/process_reads.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <reads_dir>
+
+# 2b. Infer the two haplotypes
+#     Output: <out_dir>/<sample>_{1,2}_*.fa, <out_dir>/<sample>_{1,2}_*_haplotype_regions.tsv
+bash scripts/run_iqp.sh <graph_dir>/ref_graph.txt <reads_dir> <sample> <out_dir>
+```
+
+`<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. `<graph_dir>` is the folder of `graph_file` in the config. Step 2b finds the k-mer files automatically from `<graph_dir>` and `<reads_dir>`.
 
 **Panel requirements.** Before liftover, each panel FASTA must contain only the MHC region of that assembly, not the whole genome, and all assemblies must share a common orientation.
 
