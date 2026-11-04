@@ -21,36 +21,23 @@ The pipeline has two steps:
 A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo.
 
 ```bash
-# 1a. Lift the junctions over to each panel assembly
-#     Output: <liftover_dir>/<hap>/<hap>_junctions.bed
-bash tmp/liftover.sh <GRCh38.fa> <junctions.bed> <panel_dir> <liftover_dir>
+# 1. Graph construction
+bash scripts/construct_graph.sh <GRCh38.fa> <junctions.bed> <panel_dir> <graph_dir>
 
-# 1b. Build the graph and sample its node k-mers
-#     Output: <graph_dir>/ref_graph.txt, <graph_dir>/node_kmers_<fraction>_k<k>.tsv
-bash scripts/build_graph.sh config/graph.yml
-
-# 2a. Filter the reads and sample their k-mers
-#     Output: <reads_dir>/<sample>_read_kmers_<fraction>_k<k>.tsv
-bash scripts/process_reads.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <reads_dir>
-
-# 2b. Infer the two haplotypes
-#     Output: <out_dir>/<sample>_{1,2}_*.fa, <out_dir>/<sample>_{1,2}_*_haplotype_regions.tsv
-bash scripts/run_iqp.sh <graph_dir>/ref_graph.txt <reads_dir> <sample> <out_dir>
+# 2. Inference
+bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir> <out_dir> [R]
 ```
 
-`<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. `<graph_dir>` is the folder of `graph_file` in the config. Step 2b finds the k-mer files automatically from `<graph_dir>` and `<reads_dir>`.
+`<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. Step 1 removes any junction that fails to lift to exactly one position in every assembly. Step 2 writes `<sample>_{1,2}_*.fa` and `<sample>_{1,2}_*_haplotype_regions.tsv` to `<out_dir>`.
 
-**Panel requirements.** Before liftover, each panel FASTA must contain only the MHC region of that assembly, not the whole genome, and all assemblies must share a common orientation.
+**Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation.
 
-Set input paths in [`config/graph.yml`](config/graph.yml).
-
-**Settings.** Each one is set with an environment variable:
+**Settings.** Each one is set with an environment variable; `R` can also be given as the last argument of step 2:
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `FRACTION` | 0.05 | FracMinHash sampling fraction, the share of k-mers kept |
 | `K` | 31 | k-mer length |
-| `THREADS` | 1 | Threads used by fastp and KMC in read preprocessing |
 | `C1` | 5.2 | Penalty for a k-mer the path expects but the reads lack |
 | `C2` | 3.5 | Penalty for a read k-mer the path lacks |
 | `R` | 10 | Maximum switches between reference haplotypes per inferred haplotype |
