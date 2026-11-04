@@ -22,9 +22,9 @@ A sample reference graph (108 haplotype assemblies with 438 junctions, spaced ro
 
 | Step | Script | Input | Output |
 |---|---|---|---|
-| 1a | `tmp/liftover.sh <GRCh38.fa> <junctions.bed> <panel_dir> <out_dir>` | Reference FASTA, junction BED, directory of panel FASTAs | `<hap>/<hap>_junctions.bed` |
-| 1b | `scripts/build_graph.sh <graph.yml>` | `<hap>.fa`, `<hap>/<hap>_junctions_lifted_final.bed` | `ref_graph.txt`, `node_kmers_<fraction>_k<k>.tsv` |
-| 2a | `scripts/process_reads.sh <R1> <R2> <sample> <out_dir>` | Paired-end FASTQ filtered to the region | `<sample>_R{1,2}.clean.fastq.gz`, `<sample>_read_kmers_<fraction>_k<k>.tsv` |
+| 1a | `tmp/liftover.sh <GRCh38.fa> <junctions.bed> <panel_dir> <out_dir>` | Reference FASTA, junction BED, directory of panel FASTAs, output directory | `<out_dir>/<hap>/<hap>_junctions.bed` |
+| 1b | `scripts/build_graph.sh <graph.yml>` | `<hap>.fa`, `<hap>/<hap>_junctions.bed` | `ref_graph.txt`, `node_kmers_<fraction>_k<k>.tsv` |
+| 2a | `scripts/process_reads.sh <R1> <R2> <sample> <out_dir>` | Paired-end FASTQ filtered to the region, sample name, output directory |<sample>_read_kmers_<fraction>_k<k>.tsv` |
 | 2b | `scripts/run_iqp.sh <graph> <reads_dir> <sample> <out_dir>` | Outputs of 1b and 2a | `<sample>_{1,2}_*.fa`, `<sample>_{1,2}_*_haplotype_regions.tsv` |
 
 In step 2b, `<graph>` is the `ref_graph.txt` from step 1b and `<reads_dir>` is the `<out_dir>` from step 2a. The k-mer files are found automatically from these paths.
