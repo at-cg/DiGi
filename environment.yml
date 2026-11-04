@@ -1,4 +1,4 @@
-# Everything DiGi needs except Gurobi (install separately and set GUROBI_HOME).
+# Everything DiGi needs except Gurobi (make iqp downloads it).
 #   conda env create -f environment.yml && conda activate digi
 name: digi
 channels:

@@ -3,14 +3,16 @@ DiGi infers an individual's two haplotypes (their diploid genome sequence) for t
 
 To build the graph, a set of reference haplotype assemblies in a common orientation is cut at shared junction points, which splits each assembly into the same number of nodes. DiGi then models each of the individual's two haplotypes as a path through the graph. A path can switch between reference haplotypes at junctions, a limited number of times specified by a recombination budget $R\leq r$ per haplotype, where $r$ is the number of junctions.
 
-> A Gurobi license is required to solve the integer program during inference. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
+> DiGi needs a Gurobi license to solve the integer program during inference. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
+
 ## Installation
 
 ```bash
+git clone https://github.com/at-cg/DiGi.git && cd DiGi
 conda env create -f environment.yml && conda activate digi
 make
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
-make iqp  
+make iqp
 ```
 
 ## Pipeline
