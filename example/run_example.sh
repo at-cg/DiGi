@@ -29,10 +29,7 @@ bash "$ROOT/scripts/process_reads.sh" data/HG002.MHC_R1.10x.fastq.gz data/HG002.
 
 # 3. Diploid inference
 if [ -x "$ROOT/bin/dip_iqp" ]; then
-  bash "$ROOT/scripts/run_iqp.sh" work/ref_graph/ref_graph.txt \
-    "work/ref_graph/node_kmers_${FRACTION}_k${K}.tsv" \
-    "work/reads/HG002_read_kmers_${FRACTION}_k${K}.tsv" \
-    HG002 work/inferred
+  bash "$ROOT/scripts/run_iqp.sh" work/ref_graph/ref_graph.txt work/reads HG002 work/inferred
 else
   echo "bin/dip_iqp not built (make iqp, needs Gurobi), skipping the IQP step" >&2
 fi
