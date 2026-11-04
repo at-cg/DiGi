@@ -2,11 +2,7 @@
 
 # Infer HG002's two MHC haplotypes from 10x MHC-filtered Illumina reads with an
 # 18-haplotype HGSVC graph cut every 10 kb.
-# Usage: bash example/run_example.sh
-#   Needs the digi conda env and `make` in the repo root; the IQP step also needs
-#   `make iqp` and a Gurobi license, and is skipped without bin/dip_iqp.
-#   FRACTION, K, THREADS, C1, C2 and R are passed through to the pipeline scripts.
-# -> example/work/{panel,liftover,ref_graph,reads,inferred}
+# Usage: [R] bash example/run_example.sh
 
 set -euo pipefail
 
