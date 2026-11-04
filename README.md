@@ -32,7 +32,7 @@ bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir
 
 <!-- **Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation. -->
 
-**Settings.** Each one is set with an environment variable; `R` can also be given as the last argument of step 2:
+<!-- **Settings.** Each one is set with an environment variable; `R` can also be given as the last argument of step 2:
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -40,7 +40,7 @@ bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir
 | `K` | 31 | k-mer length |
 | `C1` | 5.2 | Penalty for a k-mer the path expects but the reads lack |
 | `C2` | 3.5 | Penalty for a read k-mer the path lacks |
-| `R` | 10 | Maximum switches between reference haplotypes per inferred haplotype |
+| `R` | 10 | Maximum switches between reference haplotypes per inferred haplotype | -->
 
 
 ## Example
