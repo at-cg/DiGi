@@ -30,7 +30,7 @@ bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir
 
 `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. Step 1 removes any junction that fails to lift to exactly one position in every assembly. Step 2 writes `<sample>_{1,2}_*.fa` and `<sample>_{1,2}_*_haplotype_regions.tsv` to `<out_dir>`.
 
-**Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation.
+<!-- **Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation. -->
 
 **Settings.** Each one is set with an environment variable; `R` can also be given as the last argument of step 2:
 
@@ -42,7 +42,6 @@ bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir
 | `C2` | 3.5 | Penalty for a read k-mer the path lacks |
 | `R` | 10 | Maximum switches between reference haplotypes per inferred haplotype |
 
-Steps 1 and 2 must use the same `FRACTION` and `K`.
 
 ## Example
 
