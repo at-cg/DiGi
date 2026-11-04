@@ -1,7 +1,7 @@
 # Example: HG002 MHC at 10x
 
 Infers the two MHC haplotypes of HG002 from 10x Illumina reads, using a small
-graph of 18 HGSVC haplotypes cut at a junction every 10 kb.
+graph of 18 HGSVC haplotypes with a junction every 10 kb.
 
 ```bash
 conda env create -f environment.yml && conda activate digi
@@ -23,5 +23,5 @@ Everything is written to `example/work/`. The inferred haplotypes are
 ## Settings
 
 FracMinHash fraction 0.05, k = 31, C1 = 6.5127 (missing k-mer penalty),
-C2 = 4.0225 (novel k-mer penalty), R = 10 (maximum recombinations per haplotype).
-Override them with the `FRACTION`, `K`, `C1`, `C2` and `R` environment variables.
+C2 = 4.0225 (novel k-mer penalty), R = 10 (maximum recombinations per haplotype), where cost parameters C1 and C2 are set using the parameter estimation model in the main text.
+The current pieline can only override $R$ with the `R` environment variables.
