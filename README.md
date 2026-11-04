@@ -1,7 +1,5 @@
 # DiGi
-DiGi infers an individual's two haplotypes (their diploid genome sequence) for the MHC region, using only that individual's short reads and a simplified multi-haplotype reference graph we refer to as a **haplotype trellis graph**.
-
-To build the graph, a set of reference haplotype assemblies in a common orientation is cut at shared junction points, which splits each assembly into the same number of nodes. DiGi then models each of the individual's two haplotypes as a path through the graph. A path can switch between reference haplotypes at junctions, a limited number of times specified by a recombination budget $R\leq r$ per haplotype, where $r$ is the number of junctions.
+DiGi infers an individual's two haplotypes (their diploid genome sequence) for the MHC region, using only that individual's short reads and a simplified multi-haplotype reference graph we refer to as a **haplotype trellis graph**. DiGi models each of the individual's two haplotypes as a path through the graph. A path can switch between reference haplotypes at junctions, a limited number of times specified by a recombination budget $R\leq r$ per haplotype, where $r$ is the number of junctions.
 
 > DiGi needs a Gurobi license to solve the integer program during inference. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
 
@@ -18,10 +16,10 @@ make iqp
 ## Pipeline
 The pipeline has two steps:
 
-1. **Graph preprocessing.** Each haplotype assembly in the reference panel comes with a BED file of its junctions. The assemblies are cut at these junctions into nodes, and the k-mers of each node are sampled as a multiset using FracMinHash (scaling fraction 0.05 by default).
+1. **Graph preprocessing.** We currently assume that each haplotype assembly comes with a BED file of its junctions, and that all assemblies share the same set of junctions, defined on a linear reference. The assemblies are cut at these junctions into nodes, and the k-mers of each node are sampled as a multiset using FracMinHash (scaling fraction 0.05 by default).
 2. **Inference.** The target individual's short reads are reduced to sampled k-mers, which are compared against the graph from step 1 to infer the two haplotypes.
 
-A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**).
+<!-- A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**). -->
 
 ```bash
 # 1. Graph preprocessing
@@ -31,7 +29,7 @@ bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir>
 bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir> <out_dir> [R]
 ```
 
-`<panel_dir>` holds one `<hap>.fa` per assembly and `<bed_dir>` holds its `<hap>/<hap>_junctions.bed`, with the junction position on that assembly in column 7. All BED files must list the same junctions in the same order. `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. Step 2 writes `<sample>_{1,2}_*.fa` and `<sample>_{1,2}_*_haplotype_regions.tsv` to `<out_dir>`. $R$, the recombination budget per haplotype is set to 10, by default.
+`<panel_dir>` holds one `<hap>.fa` per assembly and `<bed_dir>` holds its `<hap>/<hap>_junctions.bed`. example/data contains a small dataset in this format. `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. Step 2 writes `<sample>_{1,2}_*.fa` to `<out_dir>`. $R$, the recombination budget per haplotype is set to 10, by default.
 
 <!-- **Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation. -->
 
@@ -48,7 +46,7 @@ bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir
 
 ## Example
 
-Infers HG002's MHC haplotypes from 10x coverage reads, using an 18-haplotype graph (about 5 minutes on one core):
+Infers HG002's MHC haplotypes from 10x coverage reads, using an 18-haplotype graph (about 5 minutes on one CPU core):
 
 ```bash
 bash example/run_example.sh

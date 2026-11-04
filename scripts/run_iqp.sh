@@ -11,7 +11,7 @@
 #   C1 (missing k-mer penalty, default 5.2), C2 (novel k-mer penalty, default 3.5) and
 #   R (max recombinations per haplotype, default 10) can be set as environment variables.
 #   Needs bin/dip_iqp (make iqp) and a Gurobi license (e.g. GRB_LICENSE_FILE or WLS variables).
-# -> <out_dir>/<sample>_{1,2}_<weights>_<read_kmers name>.fa (+ _haplotype_regions.tsv), <out_dir>/<sample>_<weights>.log
+# -> <out_dir>/<sample>_{1,2}_<weights>_<read_kmers name>.fa, <out_dir>/<sample>_<weights>.log
 
 set -euo pipefail
 

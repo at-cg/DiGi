@@ -9,8 +9,7 @@
 #   FRACTION, K, THREADS, C1 and C2 can be set as environment variables. Use the
 #   same FRACTION and K as preprocess_graph.sh.
 #   Needs bin/dip_iqp (make iqp) and a Gurobi license.
-# -> <out_dir>/<sample>_{1,2}_*.fa, <out_dir>/<sample>_{1,2}_*_haplotype_regions.tsv,
-#    <out_dir>/reads (filtered reads and read k-mers)
+# -> <out_dir>/<sample>_{1,2}_*.fa, <out_dir>/reads (filtered reads and read k-mers)
 
 set -euo pipefail
 

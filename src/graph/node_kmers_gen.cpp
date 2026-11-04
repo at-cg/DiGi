@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 // --- MurmurHash3 Core ---
+// MurmurHash3 by Austin Appleby (public domain): https://github.com/aappleby/smhasher
 
 #if defined(_MSC_VER)
 #define ROTL32(x,y) _rotl(x,y)

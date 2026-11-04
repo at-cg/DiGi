@@ -4,6 +4,8 @@
 #include <cstring>
 #include <cstdint>
 
+// MurmurHash3 by Austin Appleby (public domain): https://github.com/aappleby/smhasher
+
 // Platform-specific
 #if defined(_MSC_VER)
 #define FORCE_INLINE __forceinline
@@ -65,7 +67,7 @@ int main(int argc, char* argv[]) {
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0]
                   << " <fraction> <kmer_tsv> [output_tsv]\n"
-                  << "  fraction : e.g. 0.001 keeps ~1/1000 of k-mers\n"
+                  << "  fraction : e.g. 0.01 keeps ~1/100 of k-mers\n"
                   << "  kmer_tsv : input file with <kmer>\\t<count> per line "
                      "(e.g. from `kmc_tools transform <db> dump`)\n"
                   << "             k-mers must already be canonical (KMC default, i.e. no -b)\n";
@@ -128,7 +130,8 @@ int main(int argc, char* argv[]) {
 
         // KMC (without -b) already emits canonical k-mers: the lexicographic min
         // of the k-mer and its reverse complement under A<C<G<T, which is the
-        // same rule as get_canonical() in node_kmers_gen.cpp. Hash as-is.
+        // same rule as get_canonical() in node_kmers_gen.cpp. Hash as-is. So the
+        // sampled k-mers from the read set and the graph will match.
         uint32_t h = murmur3_32(reinterpret_cast<const uint8_t*>(kmer_ptr),
                                 kmer_len, seed);
         if (static_cast<double>(h) < threshold) {

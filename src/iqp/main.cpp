@@ -216,6 +216,7 @@ int run(int argc, char *argv[]){
     std::string LABEL_INPUT_FILE = "ref_graph.txt";
     std::string sample_name      = "Sample";
     std::string NODE_COORDS_FILE = "";
+    bool write_regions = false; // off for now; --write_regions writes *_haplotype_regions.tsv
 
     std::string out_dir      = ".";
     std::string cov_label    = "";
@@ -232,7 +233,8 @@ int run(int argc, char *argv[]){
         else if (arg == "--R" && i + 1 < argc)      R = std::stoi(argv[++i]);  
         else if (arg == "--labels" && i + 1 < argc) LABEL_INPUT_FILE = argv[++i];
         else if (arg == "--sample" && i + 1 < argc) sample_name = argv[++i];
-        else if (arg == "--node_coords" && i + 1 < argc) NODE_COORDS_FILE = argv[++i]; 
+        else if (arg == "--node_coords" && i + 1 < argc) NODE_COORDS_FILE = argv[++i];
+        else if (arg == "--write_regions")           write_regions = true;
         else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];  
         else if (arg == "--cov" && i + 1 < argc)     cov_label = argv[++i];      
         else if (arg == "--rel_weights" && i + 1 < argc) rel_weights = argv[++i];
@@ -505,7 +507,7 @@ int run(int argc, char *argv[]){
                     } else {
                         std::cerr << "Error writing to file: " << out_filename << "\n";
                     }
-                    if (!node_coords.empty()) {
+                    if (write_regions && !node_coords.empty()) {
                         std::string region_filename = out_filename;
                         size_t dot = region_filename.find_last_of('.');
                         if (dot != std::string::npos) region_filename = region_filename.substr(0, dot);
