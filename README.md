@@ -1,8 +1,8 @@
 # DiGi
 
-DiGi infers an individual's two haplotypes (their diploid genome sequence) for a region such as the MHC, using only that individual's short reads.
+DiGi infers an individual's two haplotypes (their diploid genome sequence) for the MHC region, using only that individual's short reads.
 
-It compares the reads against a **haplotype trellis graph**. To build the graph, a set of reference haplotype assemblies is cut at shared junction points, which splits each assembly into the same number of nodes. DiGi then models each of the individual's two haplotypes as a path through the graph. A path can switch between reference haplotypes at junctions, a limited number of times.
+It compares the reads against a **haplotype trellis graph**. To build the graph, a set of reference haplotype assemblies in a common orientation is cut at shared junction points, which splits each assembly into the same number of nodes. DiGi then models each of the individual's two haplotypes as a path through the graph. A path can switch between reference haplotypes at junctions, a limited number of times specified by a recombination budget $R\leq r$ per haplotype, where $r$ is the number of junctions.
 
 ## Installation
 
@@ -13,14 +13,23 @@ make iqp     # inference solver; needs GUROBI_HOME and a Gurobi license
 ```
 
 ## Pipeline
+The pipeline has two steps:
+
+1. **Graph construction.** Junctions defined on a linear reference (e.g., GRCh38 no-alt) are lifted over to each haplotype assembly in the reference panel. The assemblies are cut at these junctions into nodes, and the k-mers of each node are sampled as a multiset using FracMinHash (scaling fraction 0.05 by default).
+2. **Inference.** The target individual's short reads are reduced to sampled k-mer counts, which are compared against the graph from step 1 to infer the two haplotypes.
+
+A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo.
 
 | Step | Script | Input | Output |
 |---|---|---|---|
-| 1. Graph construction | `scripts/build_graph.sh <graph.yml>` | One FASTA per reference haplotype, plus a BED file per haplotype with the junction coordinates lifted onto that haplotype | Graph node sequences, and k-mers sampled from each node |
-| 2. Read preprocessing + inference | `scripts/process_reads.sh <R1> <R2> <sample> <out_dir>`, then<br>`scripts/run_iqp.sh <graph> <node_kmers> <read_kmers> <sample> <out_dir>` | Paired-end FASTQ reads filtered to the region, plus the graph and node k-mers from step 1 | Quality-filtered reads and their sampled k-mer counts, then two haplotype FASTAs, and for each one the reference haplotype it follows in each region |
+| 1 | `tmp/liftover.sh <GRCh38.fa> <junctions.bed> <panel_dir> <out_dir>` | Reference FASTA, junction BED, directory of panel FASTAs | `<hap>/<hap>_junctions.bed` |
+| 1 | `scripts/build_graph.sh <graph.yml>` | `<hap>.fa`, `<hap>/<hap>_junctions_lifted_final.bed` | `ref_graph.txt`, `node_kmers_<fraction>_k<k>.tsv` |
+| 2 | `scripts/process_reads.sh <R1> <R2> <sample> <out_dir>` | Paired-end FASTQ filtered to the region | `<sample>_R{1,2}.clean.fastq.gz`, `<sample>_read_kmers_<fraction>_k<k>.tsv` |
+| 2 | `scripts/run_iqp.sh <graph> <node_kmers> <read_kmers> <sample> <out_dir>` | `ref_graph.txt`, node k-mer TSV, read k-mer TSV | `<sample>_{1,2}_*.fa`, `<sample>_{1,2}_*_haplotype_regions.tsv` |
 
-Set input paths in [`config/graph.yml`](config/graph.yml). Junction BEDs on GRCh38
-can be lifted to each assembly with `tmp/liftover.sh`.
+**Panel requirements.** Before liftover, each panel FASTA must contain only the MHC region of that assembly, not the whole genome, and all assemblies must share a common orientation.
+
+Set input paths in [`config/graph.yml`](config/graph.yml).
 
 **Settings.** Each one is set with an environment variable:
 
