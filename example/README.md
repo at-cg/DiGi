@@ -20,7 +20,7 @@ Everything is written to `example/work/`. The inferred haplotypes are
 | File | Contents |
 |---|---|
 | `data/HGSVC_MHC_panel_18hap_grid10kb.tar.gz` | `panel/<hap>.fa`: MHC sequences of 18 HGSVC haplotypes. `liftover/<hap>/<hap>_junctions.bed`: 438 1-bp junctions, one every 10 kb of GRCh38 MHC, lifted to each haplotype. |
-| `data/HG002.MHC_R{1,2}.10x.fastq.gz` | HG002 NIST Ashkenazi trio Illumina 2x250 bp reads. Cleaned with fastp, then pairs with both mates aligned to GRCh38 chr6:28510125-33480577, downsampled to 10x MHC depth. |
+| `data/HG002.MHC_R{1,2}.10x.fastq.xz` | HG002 NIST Ashkenazi trio Illumina 2x250 bp reads. Cleaned with fastp, then pairs with both mates aligned to GRCh38 chr6:28510125-33480577, downsampled to 10x MHC depth. |
 
 ## Settings
 
