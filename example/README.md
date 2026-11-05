@@ -9,7 +9,8 @@ conda env create -f environment.yml && conda activate digi
 make            # k-mer sampler
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 make iqp        # IQP solver
-mkdir -p example/work && tar -C example/work -xJf example/data/graph_18_haps.tar.xz
+mkdir -p example/work
+tar -C example/work -xJf example/data/graph_18_haps.tar.xz
 bash scripts/infer_haplotypes.sh -r1 example/data/HG002.MHC_R1.10x.fastq.gz -r2 example/data/HG002.MHC_R2.10x.fastq.gz -g example/work/graph_18_haps -o example/work/inferred -s HG002
 ```
 
