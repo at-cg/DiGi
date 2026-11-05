@@ -25,16 +25,20 @@ KMERS="$OUTDIR/node_kmers_${fraction}_k${k}.tsv"
 mkdir -p "$OUTDIR"
 
 # Build graph nodes
+echo "[1/2] Building graph nodes..."
 python3 "$ROOT/src/graph/graph_builder.py" --config "$CONFIG" ${SAMPLES:+--samples_included "$SAMPLES"} > "$DEBUG"
 
 # Every haplotype must have the same number of nodes (junctions + 1)
 n_haps=$(grep -c '^Processing ' "$DEBUG" || true)
-grep -o 'wrote [0-9]* nodes' "$DEBUG" | sort | uniq -c
+counts=$(grep -o 'wrote [0-9]* nodes' "$DEBUG" | sort | uniq -c || true)
 [ "$(grep -o 'wrote [0-9]* nodes' "$DEBUG" | sort -u | wc -l)" = 1 ] \
   && [ "$(grep -c 'wrote [0-9]* nodes' "$DEBUG")" = "$n_haps" ] \
-  || { echo "unequal node counts / missing haplotypes, see $DEBUG" >&2; exit 1; }
+  || { echo "$counts" >&2; echo "unequal node counts / missing haplotypes, see $DEBUG" >&2; exit 1; }
+n_nodes=$(grep -m1 -o 'wrote [0-9]* nodes' "$DEBUG" | grep -o '[0-9]*')
+echo "      $n_haps haplotypes, $n_nodes nodes each ($((n_nodes - 1)) junctions)"
 
 # Sample node k-mers
+echo "[2/2] Sampling node k-mers (fraction $fraction, k=$k)..."
 "$BIN" --fraction "$fraction" --k "$k" --input "$GRAPH_FILE" --output "$KMERS.tmp" \
   && [ -s "$KMERS.tmp" ] && mv "$KMERS.tmp" "$KMERS" \
   || { echo "node k-mer sampling failed" >&2; exit 1; }

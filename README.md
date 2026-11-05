@@ -29,7 +29,8 @@ bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir>
 bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir> <out_dir> [R]
 ```
 
-`<panel_dir>` holds one `<hap>.fa` per assembly and `<bed_dir>` holds its `<hap>/<hap>_junctions.bed`. example/data contains a small dataset in this format. `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. Step 2 writes `<sample>_{1,2}_*.fa` to `<out_dir>`. $R$, the recombination budget per haplotype is set to 10, by default.
+`<panel_dir>` holds one `<hap>.fa` per assembly and `<bed_dir>` holds its `<hap>/<hap>_junctions.bed`. example/data contains a small dataset in this format. `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the region. Step 2 writes `<sample>_{1,2}_*.fa` to `<out_dir>`. $R$, the recombination budget per haplotype is set to 10, by default. 
+<!-- Rerunning step 2 with the same `<out_dir>` skips read processing if the reads, FracMinHash fraction and k are unchanged, so only inference runs again. -->
 
 <!-- **Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation. -->
 

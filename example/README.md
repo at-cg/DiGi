@@ -26,4 +26,4 @@ Everything is written to `example/work/`. The inferred haplotypes are
 
 FracMinHash fraction 0.05, k = 31, C1 = 6.5127 (missing k-mer penalty),
 C2 = 4.0225 (novel k-mer penalty), R = 10 (maximum recombinations per haplotype), where cost parameters C1 and C2 are set using the parameter estimation model in the main text.
-To change $R$, set the `R` environment variable, e.g. `R=5 bash example/run_example.sh`.
+To change $R$, set the `R` environment variable, e.g. `R=5 bash example/run_example.sh`. Read processing is skipped on reruns unless the reads, fraction or k change.
