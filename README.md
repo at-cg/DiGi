@@ -12,14 +12,12 @@ make
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 make iqp
 ```
-
+<!-- # 1. Graph preprocessing
+bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
 ## Usage
 <!-- A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**). -->
 The graph is hosted on Zenodo[link], download it into the <graph_dir> folder before running the code.
 ```bash
-<!-- # 1. Graph preprocessing
-bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
-
 # Inference
 bash scripts/infer_haplotypes.sh -r1 data/<R1.fastq.gz> data/<R2.fastq.gz> -g <graph_dir> -o <out_dir> [-s <sample>] [-R <recombination_per_haplotype>]
 ```
