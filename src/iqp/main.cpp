@@ -145,7 +145,6 @@ int run(int argc, char *argv[]){
     bool write_regions = false; // off for now; --write_regions writes *_haplotype_regions.tsv
 
     std::string out_dir      = ".";
-    std::string cov_label    = "";
     std::string rel_weights  = "";
 
     for (int i = 1; i < argc; ++i) {
@@ -159,21 +158,17 @@ int run(int argc, char *argv[]){
         else if (arg == "--sample" && i + 1 < argc) sample_name = argv[++i];
         else if (arg == "--write_regions")           write_regions = true;
         else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];  
-        else if (arg == "--cov" && i + 1 < argc)     cov_label = argv[++i];      
         else if (arg == "--rel_weights" && i + 1 < argc) rel_weights = argv[++i];
     }
 
     if (GRAPH_KMERS_FILE.empty() || SK_FILE.empty() || GRAPH_FILE.empty()) {
-        std::cerr << "Usage: " << argv[0] << " --graph_kmers <file> --sk <file> --graph <file> [--R <int>] [options]\n";
+        std::cerr << "Usage: " << argv[0] << " --graph_kmers <file> --sk <file> --graph <graph_dir> [--R <int>] [options]\n";
         return 1;
     }
 
     const HaplotypeGraph graph = loadGraph(GRAPH_FILE);
     const int H = graph.H, r = graph.r;
     std::cout << "Graph: H=" << H << ", r=" << r << "\n";
-
-    // Panel check: ensure that all haplotype sequences are loaded into memory before processing the graph kmers
-    for (const GraphHaplotype& hap : graph.haps) loadHaplotypeSequence(hap);
 
     const int n = H * (r + 1) + r + 2;
     int sink = H * (r + 1) + r + 1;
@@ -474,8 +469,8 @@ int run(int argc, char *argv[]){
             };
 
             std::filesystem::create_directories(out_dir);
-            std::string file_path_1 = out_dir + "/" + sample_name + "_1_" + rel_weights + "_" + cov_label + ".fa";
-            std::string file_path_2 = out_dir + "/" + sample_name + "_2_" + rel_weights + "_" + cov_label + ".fa";
+            std::string file_path_1 = out_dir + "/" + sample_name + "_1_" + rel_weights + ".fa";
+            std::string file_path_2 = out_dir + "/" + sample_name + "_2_" + rel_weights + ".fa";
 
             int n_recomb_1 = process_and_save_path(next_node_1, "1", file_path_1);
             int n_recomb_2 = process_and_save_path(next_node_2, "2", file_path_2);

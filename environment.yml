@@ -5,8 +5,6 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python>=3.9
-  - pyyaml
   - gxx_linux-64      # C++ compiler; sets CXX for make
   - make
   - fastp             # read quality filtering

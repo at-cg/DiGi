@@ -3,12 +3,13 @@
 # Count the FracMinHash-sampled k-mers of MHC-filtered paired-end reads.
 # Set FASTP=1 to quality-filter reads that have not been cleaned first.
 # Usage: bash process_reads.sh <R1.fastq[.gz]> <R2.fastq[.gz]> <sample> <out_dir>
-#   FASTP (0 to skip fastp, the default, or 1 to run it), FRACTION (default 0.05),
-#   K (default 31), THREADS (default 1), KMC_MEM in GB
-#   (default 16) and KMC_TMP (dir for KMC's bins/db, default <out_dir>) can be set
-#   as environment variables. Use the same FRACTION and K as the node k-mers.
-# -> <out_dir>/<sample>_read_kmers_<fraction>_k<k>.{tsv,params}, and with FASTP=1
+#   FASTP (0 to skip fastp, the default, or 1 to run it), THREADS (default 1), KMC_MEM
+#   in GB (default 16) and KMC_TMP (dir for KMC's bins/db, default <out_dir>) can be set
+#   as environment variables.
+# -> <out_dir>/<sample>_read_kmers_0.05_k31.{tsv,stats,params}, and with FASTP=1
 #    <sample>_R{1,2}.clean.fastq.gz, <sample>.fastp.{html,json,log}
+#    .stats holds the read and base totals of R1 + R2 (after fastp, if run); run_iqp.sh
+#    derives coverage, read length and the costs C1 and C2 from it.
 
 set -euo pipefail
 
@@ -16,8 +17,8 @@ R1="$1"
 R2="$2"
 SAMPLE="$3"
 OUTDIR="$4"
-fraction=${FRACTION:-0.05}
-k=${K:-31}
+fraction=0.05  # fixed by the node k-mers
+k=31
 threads=${THREADS:-1}
 kmc_mem=${KMC_MEM:-16}
 use_fastp=${FASTP:-0}
@@ -43,12 +44,13 @@ mkdir -p "$OUTDIR"
 # last, so an interrupted run never counts as done.
 out="$OUTDIR/${SAMPLE}_read_kmers_${fraction}_k${k}.tsv"
 stamp="${out%.tsv}.params"
+stats="${out%.tsv}.stats"
 params=$(
   for f in "$R1" "$R2"; do realpath "$f"; stat -L -c '%s %Y' "$f"; done
   echo "fraction=$fraction k=$k fastp=$use_fastp"
   cat "$0" "$BIN" | md5sum
 )
-if [ -s "$out" ] && [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$params" ]; then
+if [ -s "$out" ] && [ -s "$stats" ] && [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$params" ]; then
   echo "Reads and read settings unchanged, skipping read processing"
   echo "Read k-mers: $out"
   exit 0
@@ -81,6 +83,11 @@ if [ "$use_fastp" = 1 ]; then
   READS1="$CLEAN1"
   READS2="$CLEAN2"
 fi
+
+# Read and base totals of the reads actually used (gzip -f passes plain FASTQ through)
+gzip -cdf "$READS1" "$READS2" \
+  | awk 'BEGIN { print "reads\tbases" } NR % 4 == 2 { n++; b += length($0) } END { printf "%.0f\t%.0f\n", n, b }' \
+  > "$stats"
 
 # Count canonical k-mers of R1 + R2 with KMC, then sample them. KMC drops k-mers
 # containing N and canonicalises as the lexicographic min, like node_kmers_gen.

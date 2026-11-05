@@ -1,5 +1,5 @@
 # DiGi
-DiGi infers an individual's two haplotypes (their diploid genome sequence) for the MHC region, using only that individual's short reads and a simplified multi-haplotype reference graph we refer to as a **haplotype trellis graph**. DiGi models each of the individual's two haplotypes as a path through the graph. A path can switch between reference haplotypes at junctions, a limited number of times specified by a recombination budget $R\leq r$ per haplotype, where $r$ is the number of junctions.
+DiGi infers an individual's two haplotypes (their diploid genome sequence) for the MHC region, using only that individual's short reads and a simplified multi-haplotype reference graph. These sequences can be used for genotyping, however, one must note that these are partially phased and end-to-end phasing is not currently guaranteed.
 
 > DiGi needs a Gurobi license to solve the integer program during inference. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
 
@@ -12,24 +12,17 @@ make
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 make iqp
 ```
-
-## Pipeline
-The pipeline has two steps:
-
-1. **Graph preprocessing.** We currently assume that each haplotype assembly comes with a BED file of its junctions, and that all assemblies share the same set of junctions, defined on a linear reference. The assemblies are cut at these junctions into nodes, and the k-mers of each node are sampled as a multiset using FracMinHash (scaling fraction 0.05 by default).
-2. **Inference.** The target individual's cleaned short reads are reduced to sampled k-mers, which are compared against the graph from step 1 to infer the two haplotypes.
-
+<!-- # 1. Graph preprocessing
+bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
+## Usage
 <!-- A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**). -->
-
+The graph is hosted on Zenodo[link], download it into the <graph_dir> folder before running the code.
 ```bash
-# 1. Graph preprocessing
-bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir>
-
-# 2. Inference
-bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir> <out_dir> [R]
+# Inference
+bash scripts/infer_haplotypes.sh -r1 data/<R1.fastq.gz> -r2 data/<R2.fastq.gz> -g <graph_dir> -o <out_dir> [-s <sample>] [-R <recombination_per_haplotype>]
 ```
 
-`<panel_dir>` holds one `<hap>.fa` per assembly and `<bed_dir>` holds its `<hap>/<hap>_junctions.bed`. example/data contains a small dataset in this format. `<R1.fastq.gz>` and `<R2.fastq.gz>` are cleaned paired-end reads filtered to the region. Step 2 writes `<sample>_{1,2}_*.fa` to `<out_dir>`. $R$, the recombination budget per haplotype is set to 10, by default. 
+example/data contains a small dataset in this format. `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the MHC region stored in data/ folder. As a result, `<sample>_{1,2}_*.fa` are written to `<out_dir>`. $R$, the maximum number of recombinations per haplotype is set to 10, by default. 
 <!-- Rerunning step 2 with the same `<out_dir>` skips read processing if the reads, FracMinHash fraction and k are unchanged, so only inference runs again. -->
 
 <!-- **Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation. -->
@@ -50,7 +43,8 @@ bash scripts/infer_haplotypes.sh <R1.fastq.gz> <R2.fastq.gz> <sample> <graph_dir
 Infers HG002's MHC haplotypes from 10x coverage reads, using an 18-haplotype graph (about 5 minutes on one CPU core):
 
 ```bash
-bash example/run_example.sh
+mkdir -p example/work && tar -C example/work -xJf example/data/graph_18_haps.tar.xz
+bash scripts/infer_haplotypes.sh -r1 example/data/HG002.MHC_R1.10x.fastq.gz -r2 example/data/HG002.MHC_R2.10x.fastq.gz -g example/work/graph_18_haps -o example/work/inferred -s HG002
 ```
 
 See [`example/README.md`](example/README.md) for details.

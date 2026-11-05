@@ -1,13 +1,16 @@
-// Reader for the DiGi graph file written by graph_builder.py.
+// Reader for a DiGi graph folder:
 //
-//   #panel <dir>                     relative paths resolve against the graph file
-//   >HG00268#1#MHC<TAB>HG00268_1.fa  FASTA name, then file inside the panel dir
-//   1 0 10000 19968 ... 4947040      first node id, then r+2 node boundaries
+//   panel/<hap>.fa                  assembly of one haplotype, first sequence used
+//   bed/<hap>/<hap>_junctions.bed   its junctions, position on <hap> in column 7
+//   node_kmers_0.05_k31.tsv         node k-mers, read separately
 //
-// Nodes are contiguous: node first_id+c spans [pos[c], pos[c+1]) of the assembly.
+// Haplotypes are numbered in sorted <hap> order, which is the node numbering of
+// the node k-mers. Nodes are contiguous: node first_id+c spans [pos[c], pos[c+1])
+// of the assembly.
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
@@ -29,70 +32,14 @@ struct HaplotypeGraph {
     std::vector<GraphHaplotype> haps;  // in row order
 };
 
-inline HaplotypeGraph loadGraph(const std::string& filename) {
-    std::ifstream fin(filename);
-    if (!fin.is_open()) throw std::runtime_error("Cannot open graph file: " + filename);
+// Loads the name and sequence of the first record of a FASTA file.
+inline void readFirstSequence(const std::string& path, std::string& name, std::string& seq) {
+    std::ifstream fin(path);
+    if (!fin.is_open()) throw std::runtime_error("Cannot open panel FASTA: " + path);
 
-    namespace fs = std::filesystem;
-    fs::path panel_dir;
-    bool have_panel = false;
-    HaplotypeGraph g;
-
+    name.clear();
+    seq.clear();
     std::string line;
-    while (std::getline(fin, line)) {
-        if (line.empty()) continue;
-        if (line.rfind("#panel", 0) == 0) {
-            std::istringstream ss(line.substr(6));
-            std::string dir;
-            std::getline(ss >> std::ws, dir);
-            panel_dir = fs::path(filename).parent_path() / dir;  // keeps an absolute dir as is
-            have_panel = true;
-        } else if (line[0] == '>') {
-            size_t tab = line.find('\t');
-            if (tab == std::string::npos || !have_panel)
-                throw std::runtime_error("Bad graph header: " + line);
-            GraphHaplotype h;
-            h.name = line.substr(1, tab - 1);
-            h.fasta = (panel_dir / line.substr(tab + 1)).string();
-
-            if (!std::getline(fin, line))
-                throw std::runtime_error("Graph file ends after header of " + h.name);
-            std::istringstream ss(line);
-            ss >> h.first_node;
-            for (long long p; ss >> p;) h.pos.push_back(p);
-            g.haps.push_back(std::move(h));
-        } else {
-            throw std::runtime_error("Unexpected line in " + filename + ", rebuild it with build_graph.sh: " + line.substr(0, 40));
-        }
-    }
-
-    if (g.haps.empty()) throw std::runtime_error("No haplotypes in graph file: " + filename);
-    g.H = static_cast<int>(g.haps.size());
-    g.r = static_cast<int>(g.haps[0].pos.size()) - 2;
-    if (g.r < 0) throw std::runtime_error("Too few node boundaries in graph file: " + filename);
-
-    // The IQP finds nodes by id, so ids must follow the row and column layout
-    for (int row = 0; row < g.H; ++row) {
-        const GraphHaplotype& h = g.haps[row];
-        if (static_cast<int>(h.pos.size()) != g.r + 2)
-            throw std::runtime_error("Unequal node counts in graph file at " + h.name);
-        if (h.first_node != static_cast<long long>(row) * (g.r + 1) + 1)
-            throw std::runtime_error("Unexpected first node id for " + h.name);
-        for (size_t i = 1; i < h.pos.size(); ++i)
-            if (h.pos[i] <= h.pos[i - 1])
-                throw std::runtime_error("Node boundaries not increasing for " + h.name);
-    }
-    return g;
-}
-
-// Loads the first sequence of a haplotype's panel FASTA. The graph holds only
-// coordinates, so a panel that changed after the graph was built must fail here
-// rather than yield wrong nodes.
-inline std::string loadHaplotypeSequence(const GraphHaplotype& h) {
-    std::ifstream fin(h.fasta);
-    if (!fin.is_open()) throw std::runtime_error("Cannot open panel FASTA: " + h.fasta);
-
-    std::string seq, line, name;
     while (std::getline(fin, line)) {
         if (!line.empty() && line.back() == '\r') line.pop_back();
         if (line.empty()) continue;
@@ -103,11 +50,74 @@ inline std::string loadHaplotypeSequence(const GraphHaplotype& h) {
             seq += line;
         }
     }
+}
 
-    if (name != h.name)
-        throw std::runtime_error(h.fasta + ": sequence " + name + " does not match graph name " + h.name);
-    if (static_cast<long long>(seq.size()) != h.pos.back())
-        throw std::runtime_error(h.fasta + ": length " + std::to_string(seq.size()) +
-                                 " does not match graph length " + std::to_string(h.pos.back()));
+// Node boundaries of a haplotype: 0, its junctions, its length.
+inline std::vector<long long> nodeBoundaries(const std::string& bed, long long length) {
+    std::ifstream fin(bed);
+    if (!fin.is_open()) throw std::runtime_error("Cannot open junction BED: " + bed);
+
+    std::vector<long long> pos{0};
+    std::string line, field;
+    while (std::getline(fin, line)) {
+        if (line.empty()) continue;
+        std::istringstream ss(line);
+        for (int col = 0; col < 7; ++col)
+            if (!std::getline(ss, field, '\t'))
+                throw std::runtime_error("Fewer than 7 columns in " + bed);
+        pos.push_back(std::stoll(field));
+    }
+    if (pos.back() < length) pos.push_back(length);
+
+    for (size_t i = 1; i < pos.size(); ++i)
+        if (pos[i] <= pos[i - 1])
+            throw std::runtime_error("Junctions not increasing in " + bed);
+    if (pos.back() != length)
+        throw std::runtime_error("Junctions past the end of the assembly in " + bed);
+    return pos;
+}
+
+inline HaplotypeGraph loadGraph(const std::string& graph_dir) {
+    namespace fs = std::filesystem;
+    const fs::path panel_dir = fs::path(graph_dir) / "panel";
+    const fs::path bed_dir = fs::path(graph_dir) / "bed";
+    if (!fs::is_directory(panel_dir)) throw std::runtime_error("Missing folder: " + panel_dir.string());
+
+    std::vector<std::string> names;
+    for (const auto& entry : fs::directory_iterator(panel_dir))
+        if (entry.path().extension() == ".fa") names.push_back(entry.path().stem().string());
+    if (names.empty()) throw std::runtime_error("No .fa files in " + panel_dir.string());
+    std::sort(names.begin(), names.end());
+
+    HaplotypeGraph g;
+    long long next_node = 1;
+    std::string seq;
+    for (const std::string& hap : names) {
+        GraphHaplotype h;
+        h.fasta = (panel_dir / (hap + ".fa")).string();
+        readFirstSequence(h.fasta, h.name, seq);
+        if (seq.empty()) throw std::runtime_error("Empty FASTA: " + h.fasta);
+
+        const fs::path bed = bed_dir / hap / (hap + "_junctions.bed");
+        h.pos = nodeBoundaries(bed.string(), static_cast<long long>(seq.size()));
+        h.first_node = next_node;
+        next_node += static_cast<long long>(h.pos.size()) - 1;
+
+        // The IQP finds nodes by id, so every row (hap) needs the same number of nodes
+        if (!g.haps.empty() && h.pos.size() != g.haps[0].pos.size())
+            throw std::runtime_error("Unequal node counts at " + h.name);
+        g.haps.push_back(std::move(h));
+    }
+
+    g.H = static_cast<int>(g.haps.size());
+    g.r = static_cast<int>(g.haps[0].pos.size()) - 2;
+    if (g.r < 0) throw std::runtime_error("Too few node boundaries in " + graph_dir);
+    return g;
+}
+
+// Loads the first sequence of a haplotype's panel FASTA.
+inline std::string loadHaplotypeSequence(const GraphHaplotype& h) {
+    std::string name, seq;
+    readFirstSequence(h.fasta, name, seq);
     return seq;
 }
