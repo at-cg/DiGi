@@ -15,15 +15,15 @@ all: bin/node_kmers_gen bin/kmer_set_sampling
 
 iqp: bin/dip_iqp
 
-bin/node_kmers_gen: src/graph/node_kmers_gen.cpp | bin
-	$(CXX) $(CXXFLAGS) $< -o $@
+bin/node_kmers_gen: src/graph/node_kmers_gen.cpp src/graph/graph_file.hpp | bin
+	$(CXX) $(CXXFLAGS) $< -o $@ -lstdc++fs
 
 bin/kmer_set_sampling: src/kmer_sampling/kmer_set_sampling.cpp | bin
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 # Download Gurobi unless it is there or GUROBI_HOME was set by the user, then link
 # the installed library version, e.g. libgurobi130.so -> gurobi130
-bin/dip_iqp: src/iqp/main.cpp | bin
+bin/dip_iqp: src/iqp/main.cpp src/graph/graph_file.hpp | bin
 	@[ -d "$(GUROBI_HOME)" ] || [ "$(origin GUROBI_HOME)" != file ] \
 	  || { mkdir -p extra && curl -fL $(GUROBI_URL) | tar -xz -C extra; }
 	grb_lib=$$(basename "$$(ls "$(GUROBI_HOME)"/lib/libgurobi[0-9]*.so | grep -v _light | head -1)" .so); \

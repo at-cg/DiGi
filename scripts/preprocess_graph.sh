@@ -7,7 +7,7 @@
 #   bed_dir: <hap>/<hap>_junctions.bed per assembly, with the junction position on
 #   that assembly in column 7. All BEDs list the same junctions in the same order.
 #   FRACTION (default 0.05) and K (default 31) can be set as environment variables.
-# -> <graph_dir>/ref_graph.txt, debug_ref_graph.txt, node_kmers_<fraction>_k<k>.tsv
+# -> <graph_dir>/ref_graph.txt, node_kmers_<fraction>_k<k>.tsv
 
 set -euo pipefail
 

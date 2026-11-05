@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import argparse
 
@@ -37,48 +38,19 @@ def load_single_fasta(path):
                 buf.append(line)
     return name, "".join(buf)
 
-def write_node(out, node_start_id, written, seq, s, e):
-    if s is None or e is None:
-        return 0
-    
-    seq_len = len(seq)
-    s = max(s, 0)
-    e = min(e, seq_len) # Standard exclusive end
-    
-    # Skip if boundaries overlap or sequence is empty
-    if e <= s:
-        return 0
-        
-    node_id = node_start_id + written + 1
-    out.write(f"{node_id}\t{seq[s:e]}\n")
-    print(f">> Node {node_id}: start={s}, end={e}, length={e-s}")
-    return 1
-
-def extract_nodes_generic(sequence, bed_path, out, node_start):
-    seq_len = len(sequence)
-    written = 0
-    start = 0
-    
+def node_boundaries(seq_len, bed_path):
+    """Node boundaries of a haplotype: 0, its junctions (col7 of the BED), seq_len."""
+    pos = [0]
     with open(bed_path) as fh:
         for line in fh:
-            if not line.strip():
-                continue
-                
             parts = line.strip().split("\t")
             if len(parts) > 6:
-                boundary = int(parts[6])  # col7 (6th index) acts as the continuous breakpoint/junction
-                
-                # Create node from current position up to the boundary (seq[s:e])
-                written += write_node(out, node_start, written, sequence, start, boundary)
-                
-                # The next node will automatically start exactly at this coordinate (seq[e:e'])
-                start = boundary
-                
-    # Flush the final remainder of the sequence into the last node
-    if start < seq_len:
-        written += write_node(out, node_start, written, sequence, start, seq_len)
-
-    return written
+                pos.append(int(parts[6]))
+    if pos[-1] < seq_len:
+        pos.append(seq_len)
+    if any(b <= a for a, b in zip(pos, pos[1:])) or pos[-1] != seq_len:
+        raise ValueError(f"junctions of {bed_path} are not increasing within 0..{seq_len}")
+    return pos
 
 def filter_headers(headers, exclude_sample=None):
     if not exclude_sample:
@@ -139,35 +111,33 @@ if __name__ == "__main__":
             print(f"!! {len(missing)} sample(s) from samples_included not found "
                   f"in {fasta_folder}: {sorted(missing)}")
 
-    print(f"Using {len(headers)} haplotypes after filtering")
-    total = 0
+    # One record per haplotype: its FASTA name and file, then its first node id and
+    # node boundaries. Written only once every haplotype has passed.
+    records = []
+    next_node = 1
+    for h in headers:
+        fasta_file = os.path.join(fasta_folder, f"{h}.fa")
+        bed_file = os.path.join(bed_folder, f"{h}/{h}_junctions.bed") # *** extract bed files in one folder
 
+        seq_name, seq = load_single_fasta(fasta_file)
+        if not seq:
+            sys.exit(f"Empty or unreadable FASTA: {fasta_file}")
+
+        pos = node_boundaries(len(seq), bed_file)
+        records.append((seq_name, f"{h}.fa", next_node, pos))
+        next_node += len(pos) - 1
+
+    # Every haplotype must have the same number of nodes (junctions + 1)
+    n_nodes = {len(r[3]) - 1 for r in records}
+    if len(n_nodes) != 1:
+        counts = sorted((len(r[3]) - 1, r[0]) for r in records)
+        sys.exit(f"Unequal node counts: {counts[0]} ... {counts[-1]}")
+
+    panel = os.path.relpath(fasta_folder, os.path.dirname(os.path.abspath(out_path)))
     with open(out_path, "w") as out:
-        for h in headers:
-            fasta_file = os.path.join(fasta_folder, f"{h}.fa")
-            bed_file = os.path.join(bed_folder, f"{h}/{h}_junctions.bed") # *** extract bed files in one folder
+        out.write(f"#panel\t{panel}\n")
+        for name, fasta, first_node, pos in records:
+            out.write(f">{name}\t{fasta}\n{first_node} {' '.join(map(str, pos))}\n")
 
-            if not os.path.exists(fasta_file):
-                print(f"!! Missing FASTA file: {fasta_file}")
-                continue
-
-            print(f"Loading {fasta_file}…")
-            seq_name, seq = load_single_fasta(fasta_file)
-
-            if not seq:
-                print(f"!! Empty or unreadable FASTA: {fasta_file}")
-                continue
-
-            print(f"Processing {h} (FASTA header: {seq_name})…")
-
-            try:
-                # Note: removed the unused `is_grch38` argument from this call
-                w = extract_nodes_generic(seq, bed_file, out, total)
-                total += w
-                print(f"   → wrote {w} nodes (running total={total})")
-            except FileNotFoundError:
-                print(f"Missing BED: {bed_file}")
-            except Exception as e:
-                print(f"Error in {h}: {e}")
-
-    print(f"\n Done. Total nodes written: {total}")
+    n = n_nodes.pop()
+    print(f"      {len(records)} haplotypes, {n} nodes each ({n - 1} junctions)")

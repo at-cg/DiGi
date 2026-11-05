@@ -11,41 +11,20 @@
 #include <thread>
 
 #include "gurobi_c++.h"
+#include "../graph/graph_file.hpp"
 
 // --- Graph Structure ---
 class Graph{
     public:
         int n;
         std::vector<std::vector<int>> adj;
-        std::vector<std::string> label;
-
         Graph(int n);
-        void loadLabels(const std::string& filename);
         void addEdge(int u, int v);
 };
 
 // --- Graph Structure Methods ---
-Graph::Graph(int n): n(n), adj(n), label(n) {}
+Graph::Graph(int n): n(n), adj(n) {}
 void Graph::addEdge(int u, int v){ adj[u].push_back(v); }
-
-void Graph::loadLabels(const std::string& filename) {
-    std::ifstream fin(filename);
-    if (!fin.is_open()) throw std::runtime_error("Cannot open labels file: " + filename);
-    std::string line;
-    while (std::getline(fin, line)) {
-        if (line.empty()) continue;
-        if (line.back() == '\r') line.pop_back();
-        size_t space = line.find(' ');
-        if (space == std::string::npos) space = line.find('\t');
-        if (space == std::string::npos) continue;
-
-        int node_id = std::stoi(line.substr(0, space));
-        std::string node_label = line.substr(space + 1);
-        if (node_label == "_") node_label = "";
-        if (node_id >= 0 && node_id < n) label[node_id] = node_label;
-    }
-}
-
 
 // 1. Load Target Read K-mers (Sk) as an unordered_set (ignoring frequencies)
 std::unordered_set<std::string> loadSk(const std::string& sk_file) {
@@ -139,57 +118,6 @@ void processGraphKmers(const std::string& graph_file,
     }
 }
 
-// ------- Haplotype Node-Coordinate Loader (for reporting final FASTA once the path has been found) --------
-
-struct HaplotypeCoords {
-    std::string name;                                  // e.g. "HG00096#1#MHC"
-    std::vector<std::pair<long long,long long>> seg;    // seg[col] = (start,end) for lattice column `col`
-};
-
-std::vector<HaplotypeCoords> loadNodeCoords(const std::string& filename) {
-    std::vector<HaplotypeCoords> haps;
-    std::ifstream fin(filename);
-    if (!fin.is_open()) {
-        std::cerr << "Warning: could not open node-coords file: " << filename
-                   << " (haplotype-region output will be skipped)\n";
-        return haps;
-    }
-
-    std::string line; // Edge case: Is this processing necessary? Can we simplify the format of this file
-    while (std::getline(fin, line)) {
-        // New haplotype block, e.g.: "... Processing HG00096_1 (FASTA header: HG00096#1#MHC)..."
-        size_t proc_pos = line.find("Processing ");
-        if (proc_pos != std::string::npos) {
-            size_t hdr_pos = line.find("(FASTA header: ", proc_pos);
-            if (hdr_pos != std::string::npos) {
-                size_t name_start = hdr_pos + std::string("(FASTA header: ").size();
-                size_t name_end = line.find(')', name_start);
-                if (name_end != std::string::npos) {
-                    haps.push_back(HaplotypeCoords{line.substr(name_start, name_end - name_start), {}});
-                }
-            }
-            continue;
-        }
-
-        // Node line, e.g.: "... Node 1: start=0, end=20459, length=20459"
-        size_t node_pos = line.find("Node ");
-        if (node_pos != std::string::npos && !haps.empty()) {
-            size_t start_pos = line.find("start=", node_pos);
-            size_t end_pos   = line.find("end=", node_pos);
-            if (start_pos != std::string::npos && end_pos != std::string::npos) {
-                try {
-                    long long s = std::stoll(line.substr(start_pos + 6));
-                    long long e = std::stoll(line.substr(end_pos + 4));
-                    haps.back().seg.emplace_back(s, e);
-                } catch (...) {
-                    // malformed line; skip it rather than aborting the whole load
-                }
-            }
-        }
-    }
-    return haps;
-}
-
 // Maps a lattice node id back to (row, col). Returns (-1,-1) for the source,
 // sink, or a recombination hub node, none of which belong to a single haplotype.
 std::pair<int,int> latticeRowCol(int node_id, int H, int r, int sink) {
@@ -211,11 +139,9 @@ int run(int argc, char *argv[]){
     // c1 = missing target k-mer penalty, c2 = novel k-mer penalty.
     // Recombinations carry no objective cost; they are only limited by the --R budget.
     double c1 = 1.0, c2 = 1.0;
-    int H = -1, r = -1;
     int R = -1;
-    std::string LABEL_INPUT_FILE = "ref_graph.txt";
+    std::string GRAPH_FILE = "";
     std::string sample_name      = "Sample";
-    std::string NODE_COORDS_FILE = "";
     bool write_regions = false; // off for now; --write_regions writes *_haplotype_regions.tsv
 
     std::string out_dir      = ".";
@@ -228,22 +154,26 @@ int run(int argc, char *argv[]){
         else if (arg == "--sk" && i + 1 < argc)     SK_FILE = argv[++i];
         else if (arg == "--c1" && i + 1 < argc)     c1 = std::stod(argv[++i]);
         else if (arg == "--c2" && i + 1 < argc)     c2 = std::stod(argv[++i]);
-        else if (arg == "--H" && i + 1 < argc)      H = std::stoi(argv[++i]);
-        else if (arg == "--r" && i + 1 < argc)      r = std::stoi(argv[++i]);
         else if (arg == "--R" && i + 1 < argc)      R = std::stoi(argv[++i]);  
-        else if (arg == "--labels" && i + 1 < argc) LABEL_INPUT_FILE = argv[++i];
+        else if (arg == "--graph" && i + 1 < argc)  GRAPH_FILE = argv[++i];
         else if (arg == "--sample" && i + 1 < argc) sample_name = argv[++i];
-        else if (arg == "--node_coords" && i + 1 < argc) NODE_COORDS_FILE = argv[++i];
         else if (arg == "--write_regions")           write_regions = true;
         else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];  
         else if (arg == "--cov" && i + 1 < argc)     cov_label = argv[++i];      
         else if (arg == "--rel_weights" && i + 1 < argc) rel_weights = argv[++i];
     }
 
-    if (GRAPH_KMERS_FILE.empty() || SK_FILE.empty() || H < 1 || r < 0) {
-        std::cerr << "Usage: " << argv[0] << " --graph_kmers <file> --sk <file> --H <int> --r <int> [--R <int>] [options]\n";
+    if (GRAPH_KMERS_FILE.empty() || SK_FILE.empty() || GRAPH_FILE.empty()) {
+        std::cerr << "Usage: " << argv[0] << " --graph_kmers <file> --sk <file> --graph <file> [--R <int>] [options]\n";
         return 1;
     }
+
+    const HaplotypeGraph graph = loadGraph(GRAPH_FILE);
+    const int H = graph.H, r = graph.r;
+    std::cout << "Graph: H=" << H << ", r=" << r << "\n";
+
+    // Panel check: ensure that all haplotype sequences are loaded into memory before processing the graph kmers
+    for (const GraphHaplotype& hap : graph.haps) loadHaplotypeSequence(hap);
 
     const int n = H * (r + 1) + r + 2;
     int sink = H * (r + 1) + r + 1;
@@ -261,30 +191,6 @@ int run(int argc, char *argv[]){
         for(int row = 0; row < H; row++){
             g.addEdge(row*(r+1) + recomb + 1, w_node);  // haplotype-to-hub edges
             g.addEdge(w_node, row*(r+1) + recomb + 2);  // hub-to-haplotype edges
-        }
-    }
-
-    g.loadLabels(LABEL_INPUT_FILE);
-    std::vector<HaplotypeCoords> node_coords;
-    if (!NODE_COORDS_FILE.empty()) {
-        node_coords = loadNodeCoords(NODE_COORDS_FILE);
-        std::cout << "Loaded node coordinates for " << node_coords.size() << " haplotypes";
-        if ((int)node_coords.size() < H) {
-            std::cout << " (warning: fewer than H=" << H
-                       << " -- rows beyond the loaded haplotypes will be labeled UNKNOWN)";
-        } else if ((int)node_coords.size() > H) {
-            std::cout << "\n";
-            std::cerr << "Error: node-coords file has more haplotypes than H=" << H
-                      << "; check --H and --node_coords\n";
-            return 1;
-        }
-        std::cout << "\n";
-        for (const auto& hc : node_coords) {
-            if ((int)hc.seg.size() != r + 1) {
-                std::cout << "Warning: " << hc.name << " has " << hc.seg.size()
-                          << " nodes, expected r+1=" << r + 1
-                          << " -- missing columns get start/end -1 in the region output\n";
-            }
         }
     }
 
@@ -489,8 +395,15 @@ int run(int argc, char *argv[]){
                     }
 
                     std::string sequence;
+                    std::map<int, std::string> assemblies; // only the rows on this path
                     for (int node_id : path_nodes) {
-                        sequence += g.label[node_id];
+                        auto [row, col] = latticeRowCol(node_id, H, r, t);
+                        if (row < 0) continue; // source / sink / recombination hub
+                        const GraphHaplotype& hap = graph.haps[row];
+                        auto it = assemblies.find(row);
+                        if (it == assemblies.end())
+                            it = assemblies.emplace(row, loadHaplotypeSequence(hap)).first;
+                        sequence.append(it->second, hap.pos[col], hap.pos[col + 1] - hap.pos[col]);
                     }
 
                     std::ofstream fout(out_filename);
@@ -507,7 +420,7 @@ int run(int argc, char *argv[]){
                     } else {
                         std::cerr << "Error writing to file: " << out_filename << "\n";
                     }
-                    if (write_regions && !node_coords.empty()) {
+                    if (write_regions) {
                         std::string region_filename = out_filename;
                         size_t dot = region_filename.find_last_of('.');
                         if (dot != std::string::npos) region_filename = region_filename.substr(0, dot);
@@ -523,10 +436,7 @@ int run(int argc, char *argv[]){
 
                             auto flush_segment = [&]() {
                                 if (seg_row >= 0) {
-                                    std::string hap_name = (seg_row < (int)node_coords.size())
-                                        ? node_coords[seg_row].name
-                                        : ("row_" + std::to_string(seg_row) + "_UNKNOWN");
-                                    rout << seg_start << "\t" << seg_end << "\t" << hap_name
+                                    rout << seg_start << "\t" << seg_end << "\t" << graph.haps[seg_row].name
                                          << "\t" << seg_row << "\t" << seg_cols << "\n";
                                 }
                             };
@@ -535,12 +445,8 @@ int run(int argc, char *argv[]){
                                 auto [row, col] = latticeRowCol(node_id, H, r, t);
                                 if (row < 0) continue; // source / sink / recombination hub
 
-                                long long node_start = -1, node_end = -1;
-                                if (row < (int)node_coords.size() &&
-                                    col < (int)node_coords[row].seg.size()) {
-                                    node_start = node_coords[row].seg[col].first;
-                                    node_end   = node_coords[row].seg[col].second;
-                                }
+                                long long node_start = graph.haps[row].pos[col];
+                                long long node_end   = graph.haps[row].pos[col + 1];
 
                                 if (row != seg_row) {
                                     flush_segment();

@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "graph_file.hpp"
+
 // --- MurmurHash3 Core ---
 // MurmurHash3 by Austin Appleby (public domain): https://github.com/aappleby/smhasher
 
@@ -120,7 +122,7 @@ std::string get_canonical(const std::string& kmer) {
 
 // --- Main Processing Logic ---
 
-int main(int argc, char* argv[]) {
+int run(int argc, char* argv[]) {
 
     std::unordered_map<std::string, std::string> args;
 
@@ -156,17 +158,6 @@ int main(int argc, char* argv[]) {
         args["--input"];
 
 
-    std::ifstream fin(input_file);
-
-    if (!fin.is_open()) {
-
-        std::cerr
-            << "Error: Cannot open input file "
-            << input_file
-            << "\n";
-
-        return 1;
-    }
     double threshold =
         fraction * 4294967296.0;
 
@@ -183,30 +174,24 @@ int main(int argc, char* argv[]) {
         }
     }
 
-   std::string line;
+    HaplotypeGraph graph = loadGraph(input_file);
 
-    while (std::getline(fin, line)) {
+    for (const GraphHaplotype& hap : graph.haps) {
 
-        if (line.empty() || line[0] == '#')
-            continue;
+      std::string assembly = loadHaplotypeSequence(hap);
 
-        // input format:
-        // <node_id>\t<sequence>
+      for (int col = 0; col <= graph.r; ++col) {
 
-        std::stringstream ss(line);
+        long long node_id = hap.first_node + col;
 
-        std::string node_id;
-        std::string seq;
-
-        if (!(ss >> node_id >> seq))
-            continue;
+        std::string seq = assembly.substr(
+            hap.pos[col],
+            hap.pos[col + 1] - hap.pos[col]
+        );
 
         // skip null / tiny sequences
 
-        if (
-            seq == "_" ||
-            seq.length() < (size_t)k
-        ) {
+        if (seq.length() < (size_t)k) {
             continue;
         }
 
@@ -267,13 +252,21 @@ int main(int argc, char* argv[]) {
 
             *out << "\n";
         }
+      }
     }
-
-    fin.close();
 
     if (fout.is_open()) {
         fout.close();
     }
 
     return 0;
+}
+
+int main(int argc, char* argv[]) {
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        return 1;
+    }
 }

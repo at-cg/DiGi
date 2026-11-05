@@ -2,3 +2,4 @@ bin/
 extra/
 example/work/
 tmp_full_pipeline/
+tmp/
