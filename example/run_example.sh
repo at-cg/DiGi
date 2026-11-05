@@ -15,7 +15,7 @@ export K=${K:-31}
 export C1=${C1:-6.5127} C2=${C2:-4.0225} R=${R:-10}
 
 mkdir -p work
-[ -d work/panel ] || tar -C work -xzf data/HGSVC_MHC_panel_18hap_grid10kb.tar.xz
+[ -d work/panel ] || tar -C work -xJf data/HGSVC_MHC_panel_18hap_grid10kb.tar.xz
 
 # 1. Graph and node k-mers
 echo "=== Step 1/3: Graph and node k-mers ==="
