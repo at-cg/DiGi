@@ -9,6 +9,6 @@ graph:
   haplotype_fasta_dir: "{base_dir}/panel"
 
   # 1-bp junction every 10 kb of GRCh38 MHC, lifted to each haplotype; junctions failing in any haplotype removed
-  rh_bed_file: "{base_dir}/liftover"
+  rh_bed_file: "{base_dir}/junctions"
 
   graph_file: "{base_dir}/ref_graph/ref_graph.txt"
