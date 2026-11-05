@@ -19,7 +19,7 @@ bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
 The graph is hosted on Zenodo[link], download it into the <graph_dir> folder before running the code.
 ```bash
 # Inference
-bash scripts/infer_haplotypes.sh -r1 data/<R1.fastq.gz> data/<R2.fastq.gz> -g <graph_dir> -o <out_dir> [-s <sample>] [-R <recombination_per_haplotype>]
+bash scripts/infer_haplotypes.sh -r1 data/<R1.fastq.gz> -r2 data/<R2.fastq.gz> -g <graph_dir> -o <out_dir> [-s <sample>] [-R <recombination_per_haplotype>]
 ```
 
 example/data contains a small dataset in this format. `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the MHC region stored in data/ folder. As a result, `<sample>_{1,2}_*.fa` are written to `<out_dir>`. $R$, the maximum number of recombinations per haplotype is set to 10, by default. 
