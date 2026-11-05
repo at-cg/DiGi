@@ -13,20 +13,15 @@ export GRB_LICENSE_FILE=/path/to/gurobi.lic
 make iqp
 ```
 
-## Pipeline
-The pipeline has two steps:
-
-1. **Graph preprocessing.** We currently assume that each haplotype assembly comes with a BED file of its junctions, and that all assemblies share the same set of junctions, defined on a linear reference. The assemblies are cut at these junctions into nodes, and the k-mers of each node are sampled as a multiset using FracMinHash (scaling fraction 0.05 by default).
-2. **Inference.** The target individual's cleaned short reads are reduced to sampled k-mers, which are compared against the graph from step 1 to infer the two haplotypes.
-
+## Usage
 <!-- A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**). -->
-
+The graph is hosted on Zenodo[link], download it into the <graph_dir> folder before running the code.
 ```bash
 <!-- # 1. Graph preprocessing
 bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
 
 # Inference
-bash scripts/infer_haplotypes.sh -r1 data/<R1.fastq.gz> data/<R2.fastq.gz> -g data/<graph_dir> -o <out_dir> [-s <sample>] [-R <recombination_per_haplotype>]
+bash scripts/infer_haplotypes.sh -r1 data/<R1.fastq.gz> data/<R2.fastq.gz> -g <graph_dir> -o <out_dir> [-s <sample>] [-R <recombination_per_haplotype>]
 ```
 
 example/data contains a small dataset in this format. `<R1.fastq.gz>` and `<R2.fastq.gz>` are paired-end reads filtered to the MHC region stored in data/ folder. As a result, `<sample>_{1,2}_*.fa` are written to `<out_dir>`. $R$, the maximum number of recombinations per haplotype is set to 10, by default. 
