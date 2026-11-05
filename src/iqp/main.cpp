@@ -169,6 +169,7 @@ int run(int argc, char *argv[]){
     const HaplotypeGraph graph = loadGraph(GRAPH_FILE);
     const int H = graph.H, r = graph.r;
     std::cout << "Graph: H=" << H << ", r=" << r << "\n";
+    std::cout << "Graph read: (haplotypes: " << H << ", junctions: " << r << ")\n";
 
     const int n = H * (r + 1) + r + 2;
     int sink = H * (r + 1) + r + 1;

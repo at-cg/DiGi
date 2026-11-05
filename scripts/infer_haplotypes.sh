@@ -46,6 +46,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 [ -d "$GRAPH_DIR/bed" ] || { echo "missing $GRAPH_DIR/bed" >&2; exit 1; }
 [ -s "$GRAPH_DIR/node_kmers_0.05_k31.tsv" ] || { echo "missing $GRAPH_DIR/node_kmers_0.05_k31.tsv" >&2; exit 1; }
 
+echo "Read input files: $R1, $R2"
 echo "=== Step 1/2: Read processing ==="
 bash "$ROOT/scripts/process_reads.sh" "$R1" "$R2" "$SAMPLE" "$OUTDIR/reads"
 echo "=== Step 2/2: Diploid inference ==="

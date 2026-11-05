@@ -77,4 +77,5 @@ cd "$OUTDIR"
   > "$OUTDIR/${SAMPLE}_${rel_weights}.log" 2>&1 \
   || { echo "IQP failed, see $OUTDIR/${SAMPLE}_${rel_weights}.log" >&2; exit 1; }
 
-echo "Inferred haplotypes in $OUTDIR"
+grep "^Graph read" "$OUTDIR/${SAMPLE}_${rel_weights}.log"
+echo "Finished running. Inferred haplotypes in $OUTDIR"

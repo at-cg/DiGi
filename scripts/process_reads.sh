@@ -103,12 +103,12 @@ step=$((step + 1))
 # -ci1: keep singletons (KMC default -ci2 drops them); -cs: no 255 cap on counts
 kmc -k"$k" -ci1 -cs4294967295 -t"$threads" -m"$kmc_mem" -fq @"$work/reads.lst" "$work/db" "$work/bins" \
   > "$work/kmc.log" 2>&1 || { cat "$work/kmc.log" >&2; echo "kmc failed for $SAMPLE" >&2; exit 1; }
-grep -E "No. of unique counted k-mers|Total no. of k-mers|Total no. of reads" "$work/kmc.log" >&2
+grep -E "No. of unique counted k-mers|Total no. of k-mers|Total no. of reads" "$work/kmc.log"
 
 echo "[$step/$steps] Sampling read k-mers (fraction $fraction)..."
 # Stream the dump straight into the sampler instead of writing it out
 kmc_tools -t"$threads" transform "$work/db" dump /dev/stdout 2> "$work/dump.log" \
-  | "$BIN" "$fraction" /dev/stdin "$out.tmp" \
+  | "$BIN" "$fraction" /dev/stdin "$out.tmp" 2>&1 \
   && [ -s "$out.tmp" ] && mv "$out.tmp" "$out" \
   || { cat "$work/dump.log" >&2; echo "read k-mer sampling failed for $SAMPLE" >&2; rm -f "$out.tmp"; exit 1; }
 
