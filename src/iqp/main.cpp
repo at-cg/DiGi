@@ -79,7 +79,7 @@ void processGraphKmers(const std::string& graph_file,
             continue;
         }
 
-        if (node_id < 0 || node_id >= num_nodes) continue;  // Edge case: when would this be, is it safe to skip without throwing errors? 
+        if (node_id < 0 || node_id >= num_nodes) continue; 
 
         std::string kmers_str = line.substr(tab_pos + 1);
 
@@ -222,7 +222,7 @@ int run(int argc, char *argv[]){
 
         GRBModel model(env);
         model.set(GRB_StringAttr_ModelName, "Diploid Path Inference");
-        model.set(GRB_IntParam_Threads, 1); // serial solve per run //CHECK - remove this to allow Gurobi to use multiple threads for solving
+        model.set(GRB_IntParam_Threads, 1); // serial solve per run - remove this to allow Gurobi to use multiple threads for solving
         
         std::vector<GRBVar> x_1_vars, x_2_vars;
         std::vector<std::pair<int,int>> edge_list;
