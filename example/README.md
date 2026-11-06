@@ -11,11 +11,11 @@ export GRB_LICENSE_FILE=/path/to/gurobi.lic
 make iqp        # IQP solver
 mkdir -p example/work
 tar -C example/work -xJf example/data/graph_18_haps.tar.xz
-bash scripts/infer_haplotypes.sh -r1 example/data/HG002.MHC_R1.10x.fastq.gz -r2 example/data/HG002.MHC_R2.10x.fastq.gz -g example/work/graph_18_haps -o example/work/inferred -s HG002
+bash scripts/infer_haplotypes.sh -r1 example/data/HG002.MHC_R1.10x.fastq.gz -r2 example/data/HG002.MHC_R2.10x.fastq.gz -g example/work/graph_18_haps -outdir example/work/inferred -outname HG002
 ```
 
 Everything is written to `example/work/`. The inferred haplotypes are
-`example/work/inferred/HG002_{1,2}_c1-6.3245_c2-3.1333_R-10.fa`. Expect a runtime of 5 minutes on a single CPU core.
+`example/work/inferred/HG002_{1,2}_*.fa`. Expect a runtime of 5 minutes on a single CPU core.
 
 ## Data
 
@@ -27,4 +27,3 @@ Everything is written to `example/work/`. The inferred haplotypes are
 ## Settings
 
 Cost parameters C1 and C2 are estimated from the reads using the parameter estimation model in the main text.
-To change $R$, add `-R 5` to the command above.
