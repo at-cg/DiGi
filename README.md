@@ -17,7 +17,7 @@ make iqp
 bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
 ## Usage
 <!-- A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**). -->
-The graph is hosted on Zenodo[link], download it into the `<graph_dir>` folder before running the code.
+Two graph representations, one a small example and the other the main reference used in the paper, are available on [Zenodo](https://zenodo.org/records/23974110), along with the reference and test MHC assemblies. Download *graph_18_haps.tar.gz* or *graph_108_haps.tar.gz* into the `<graph_dir>` folder before running the code.
 ```bash
 # Inference
 bash scripts/infer_haplotypes.sh -r1 R1.fastq -r2 R2.fastq -g <graph_dir> -outdir <out_dir> -outname <prefix> 
