@@ -119,12 +119,12 @@ void processGraphKmers(const std::string& graph_file,
 }
 
 // Maps a lattice node id back to (row, col). Returns (-1,-1) for the source,
-// sink, or a recombination hub node, none of which belong to a single haplotype.
+// sink, or a junction node, none of which belong to a single haplotype.
 std::pair<int,int> latticeRowCol(int node_id, int H, int r, int sink) {
     if (node_id == 0 || node_id == sink) return {-1, -1};
-    int hub_start = H * (r + 1) + 1;
-    int hub_end   = H * (r + 1) + r; // inclusive
-    if (node_id >= hub_start && node_id <= hub_end) return {-1, -1};
+    int junction_start = H * (r + 1) + 1;
+    int junction_end   = H * (r + 1) + r; // inclusive
+    if (node_id >= junction_start && node_id <= junction_end) return {-1, -1};
     int idx = node_id - 1;
     int row = idx / (r + 1);
     int col = idx % (r + 1);
@@ -185,8 +185,8 @@ int run(int argc, char *argv[]){
     for(int recomb = 0; recomb < r; ++recomb){
         int w_node = H*(r+1) + recomb + 1;
         for(int row = 0; row < H; row++){
-            g.addEdge(row*(r+1) + recomb + 1, w_node);  // haplotype-to-hub edges
-            g.addEdge(w_node, row*(r+1) + recomb + 2);  // hub-to-haplotype edges
+            g.addEdge(row*(r+1) + recomb + 1, w_node);  // haplotype-to-junction edges
+            g.addEdge(w_node, row*(r+1) + recomb + 2);  // junction-to-haplotype edges
         }
     }
 
@@ -228,8 +228,8 @@ int run(int argc, char *argv[]){
         std::vector<std::pair<int,int>> edge_list;
         std::vector<std::vector<int>> out_edge_idx1(g.n), in_edge_idx1(g.n);
         std::vector<std::vector<int>> out_edge_idx2(g.n), in_edge_idx2(g.n);
-        auto is_hub = [&](int node) { return node > H*(r+1) && node != sink; };
-        auto recomb_weight = [&](int u, int v) { return (is_hub(u) || is_hub(v)) ? 0.5 : 0.0; };    // assign weight 1/2 to each recombination edge, so that the total recombination count is the sum of weights along the path
+        auto is_junction = [&](int node) { return node > H*(r+1) && node != sink; };
+        auto recomb_weight = [&](int u, int v) { return (is_junction(u) || is_junction(v)) ? 0.5 : 0.0; };    // assign weight 1/2 to each recombination edge, so that the total recombination count is the sum of weights along the path
         std::vector<double> edge_w;
 
         GRBQuadExpr obj = 0;
@@ -290,7 +290,7 @@ int run(int argc, char *argv[]){
             }
             model.addConstr(nrec1 <= R, "max_recomb_1");
             model.addConstr(nrec2 <= R, "max_recomb_2");
-            std::cout << "Recombination cap: at most " << R << " per haplotype (W = 1/2 per hub edge)\n";
+            std::cout << "Recombination cap: at most " << R << " per haplotype (W = 1/2 per junction edge)\n";
         }
 
         std::cout << "Optimizing IQP Model...\n";
@@ -377,7 +377,7 @@ int run(int argc, char *argv[]){
                     std::cout << "\nPath verification: Reached Sink (" << t << ")";
                     std::cout << "\nNumber of recombinations: " << n_recomb << "\n";
 
-                    // Debug check: every hub visit should be a real switch to a different row
+                    // Debug check: every junction visit should be a real switch to a different row
                     int n_switches = 0, prev_row = -1;
                     for (int node_id : path_nodes) {
                         int row = latticeRowCol(node_id, H, r, t).first;
@@ -386,7 +386,7 @@ int run(int argc, char *argv[]){
                         prev_row = row;
                     }
                     if (n_switches != n_recomb) {
-                        std::cout << "Warning: " << n_recomb << " hub visits but only " << n_switches
+                        std::cout << "Warning: " << n_recomb << " junction visits but only " << n_switches
                                   << " haplotype switches -- some recombinations return to the same row\n";
                     }
 
@@ -394,7 +394,7 @@ int run(int argc, char *argv[]){
                     std::map<int, std::string> assemblies; // only the rows on this path
                     for (int node_id : path_nodes) {
                         auto [row, col] = latticeRowCol(node_id, H, r, t);
-                        if (row < 0) continue; // source / sink / recombination hub
+                        if (row < 0) continue; // source / sink / junction
                         const GraphHaplotype& hap = graph.haps[row];
                         auto it = assemblies.find(row);
                         if (it == assemblies.end())
@@ -439,7 +439,7 @@ int run(int argc, char *argv[]){
 
                             for (int node_id : path_nodes) {
                                 auto [row, col] = latticeRowCol(node_id, H, r, t);
-                                if (row < 0) continue; // source / sink / recombination hub
+                                if (row < 0) continue; // source / sink / junction
 
                                 long long node_start = graph.haps[row].pos[col];
                                 long long node_end   = graph.haps[row].pos[col + 1];
