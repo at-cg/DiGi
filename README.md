@@ -11,7 +11,6 @@ git clone https://github.com/at-cg/DiGi.git && cd DiGi
 conda env create -f environment.yml && conda activate digi
 make
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
-make iqp
 ```
 <!-- # 1. Graph preprocessing
 bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
@@ -23,7 +22,7 @@ Two graph representations, one a small example and the other the main reference 
 bash scripts/infer_haplotypes.sh -r1 R1.fastq -r2 R2.fastq -g <graph_dir> -outdir <out_dir> -outname <prefix> 
 ```
 
-example/data contains a small dataset in this format. `R1.fastq` and `R2.fastq` are paired-end reads filtered to the MHC region (gzipped files also work). As a result, `<prefix>_{1,2}_*.fa` are written to `<out_dir>`.
+example/data contains a small dataset in this format. `R1.fastq` and `R2.fastq` are paired-end reads filtered to the MHC region. As a result, `<prefix>_{1,2}_*.fa` are written to `<out_dir>`.
 <!-- Rerunning step 2 with the same `<out_dir>` skips read processing if the reads, FracMinHash fraction and k are unchanged, so only inference runs again. -->
 
 <!-- **Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation. -->

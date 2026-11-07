@@ -11,7 +11,7 @@
 #   is the bp the reads were filtered to (default GRCh38 MHC, 4970452).
 #   R (max recombinations per haplotype, default 10) can also be set.
 #   All of these are environment variables.
-#   Needs bin/dip_iqp (make iqp) and a Gurobi license (e.g. GRB_LICENSE_FILE or WLS variables).
+#   Needs bin/dip_iqp (make) and a Gurobi license (e.g. GRB_LICENSE_FILE or WLS variables).
 # -> <out_dir>/<sample>_{1,2}_<weights>.fa, <out_dir>/<sample>_<weights>.log
 
 set -euo pipefail
@@ -26,7 +26,7 @@ R=${R:-10}
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN="$ROOT/bin/dip_iqp"
-[ -x "$BIN" ] || { echo "missing $BIN, run make iqp in $ROOT first" >&2; exit 1; }
+[ -x "$BIN" ] || { echo "missing $BIN, run make in $ROOT first" >&2; exit 1; }
 
 GK="$GRAPH/node_kmers_${fraction}_k${k}.tsv"
 SK="$READS_DIR/${SAMPLE}_read_kmers_${fraction}_k${k}.tsv"

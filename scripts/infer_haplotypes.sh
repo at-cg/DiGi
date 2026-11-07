@@ -9,7 +9,7 @@
 #   FASTP (1 to run fastp on uncleaned reads), THREADS, C1 and C2 can be set as environment
 #   variables. C1 and C2 default to cost parameters estimated from the reads' coverage and
 #   length (see run_iqp.sh).
-#   Needs bin/dip_iqp (make iqp) and a Gurobi license.
+#   Needs bin/dip_iqp (make) and a Gurobi license.
 # -> <out_dir>/<prefix>_{1,2}_*.fa, <out_dir>/reads (read k-mers)
 
 set -euo pipefail
