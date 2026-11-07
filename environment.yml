@@ -7,5 +7,4 @@ channels:
 dependencies:
   - gxx_linux-64      # C++ compiler; sets CXX for make
   - make
-  - fastp             # read quality filtering
   - kmc               # read k-mer counting
