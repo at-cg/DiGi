@@ -5,7 +5,6 @@ graph of 18 HGSVC haplotypes with a junction every 10 kb.
 
 ```bash
 git clone https://github.com/at-cg/DiGi.git && cd DiGi
-conda env create -f environment.yml && conda activate digi
 make
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 mkdir -p example/work

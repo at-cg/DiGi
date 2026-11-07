@@ -6,9 +6,10 @@ Given a pangenome index of MHC reference haplotypes (e.g., from haplotype-resolv
 
 ## Installation
 
+Requires Linux (x86-64) and GCC 8.3 or newer.
+
 ```bash
 git clone https://github.com/at-cg/DiGi.git && cd DiGi
-conda env create -f environment.yml && conda activate digi
 make
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 ```

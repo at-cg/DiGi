@@ -1,7 +1,7 @@
 # Build DiGi's C++ tools into bin/
-#   make         k-mer set sampler and IQP solver; uses the Gurobi install in
-#                GUROBI_HOME if set, otherwise downloads Gurobi into extra/
-#                (Linux x86-64)
+#   make         k-mer set sampler, IQP solver and KMC. Needs Linux x86-64 and
+#                GCC 8 or newer. Uses the Gurobi install in GUROBI_HOME if set,
+#                otherwise downloads Gurobi into extra/. Downloads KMC into bin/.
 #   make clean   remove bin/
 
 CXX      ?= g++
@@ -11,7 +11,13 @@ GUROBI_VERSION ?= 13.0.0
 GUROBI_URL = https://packages.gurobi.com/$(basename $(GUROBI_VERSION))/gurobi$(GUROBI_VERSION)_linux64.tar.gz
 GUROBI_HOME ?= $(CURDIR)/extra/gurobi$(subst .,,$(GUROBI_VERSION))/linux64
 
-all: bin/kmer_set_sampling bin/dip_iqp
+KMC_VERSION ?= 3.2.4
+KMC_URL = https://github.com/refresh-bio/KMC/releases/download/v$(KMC_VERSION)/KMC$(KMC_VERSION).linux.x64.tar.gz
+
+all: bin/kmer_set_sampling bin/dip_iqp bin/kmc
+
+bin/kmc: | bin
+	curl -fL $(KMC_URL) | tar -xz -C bin --strip-components=1 bin/kmc bin/kmc_tools
 
 bin/kmer_set_sampling: src/kmer_sampling/kmer_set_sampling.cpp | bin
 	$(CXX) $(CXXFLAGS) $< -o $@

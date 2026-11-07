@@ -21,9 +21,10 @@ kmc_mem=${KMC_MEM:-16}
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN="$ROOT/bin/kmer_set_sampling"
+export PATH="$ROOT/bin:$PATH"  # kmc and kmc_tools from make
 [ -x "$BIN" ] || { echo "missing $BIN, run make in $ROOT first" >&2; exit 1; }
 for tool in kmc kmc_tools; do
-  command -v "$tool" >/dev/null || { echo "missing $tool, activate the digi env" >&2; exit 1; }
+  command -v "$tool" >/dev/null || { echo "missing $tool, run make in $ROOT first" >&2; exit 1; }
 done
 for f in "$R1" "$R2"; do
   [ -s "$f" ] || { echo "missing $f" >&2; exit 1; }
