@@ -14,7 +14,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 -r1 <R1> -r2 <R2> -g <graph_dir> -outdir <out_dir> -outname <prefix> [-R <R>]" >&2
+    echo "usage: $0 -r1 <R1> -r2 <R2> -g <graph_dir> -outdir <out_dir> -outname <prefix> [-R <recombination_per_haplotype>]" >&2
     exit 1
 }
 
