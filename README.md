@@ -1,14 +1,14 @@
 # DiGi
 DiGi is a pangenome-based genome inference method. It is useful for genotyping and phasing variants in the human [major histocompatibility complex (MHC)](https://genome.ucsc.edu/cgi-bin/hgc?db=hg38&c=chr6&l=31944158&r=31944159&o=28510019&t=33480577&g=comments&i=MHC). Given a pangenome graph of MHC reference haplotypes (e.g., from haplotype-resolved long-read assemblies) and short reads of a donor genome, DiGi infers two mosaic paths in the pangenome that best explain the reads. It outputs two FASTA files, one per inferred haplotype. These can be passed to variant-calling tools such as [PAV](https://github.com/EichlerLab/pav) or gene-annotation tools such as [Immuannot](https://github.com/YingZhou001/Immuannot) for downstream analysis.
 
-> DiGi needs a Gurobi license to solve its integer program. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
+> Note: DiGi needs a Gurobi license to solve its integer program. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
 
-> Phasing is reliable within genes but may contain switch errors over long distances, so the two output haplotypes should not be assumed to be phased across the full MHC.
+> Note: Phasing is reliable within genes but may contain switch errors over long distances, so the two output haplotypes should not be assumed to be phased across the full MHC.
 
 ## Installation
 Requires Linux (x86-64) and GCC 8.3 or newer.
 
-### Download source code and compile
+### STEP 1: Download source code and compile
 ```bash
 git clone https://github.com/at-cg/DiGi.git
 cd DiGi
@@ -17,7 +17,7 @@ make
 
 `make` also downloads the external dependencies: [KMC](https://github.com/refresh-bio/KMC) and Gurobi
 
-### Gurobi license setup 
+### STEP 2: Gurobi license setup 
 DiGi reads your Gurobi license from the `GRB_LICENSE_FILE` environment variable. For academic use, a **WLS Academic** license works well and is easy to set up:
 
 1. Register or log in at the [Gurobi Academic Program](https://www.gurobi.com/academics) with your institutional email address and request a **WLS Academic** license.
