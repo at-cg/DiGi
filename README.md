@@ -63,6 +63,8 @@ bash scripts/infer_haplotypes.sh \
 
 ## Algorithm overview
 
+DiGi formulates diploid genome inference as an integer quadratic program (IQP) that jointly reconstructs two haplotypes as mosaic paths through the pangenome graph. The optimization balances agreement between the inferred haplotypes and observed read $k$-mers while limiting recombinations between reference haplotypes.
+
 <p align="center">
   <img src="docs/figures/digi_overview.svg" width="100%" alt="Overview of the DiGi algorithm">
 </p>
