@@ -21,8 +21,8 @@ Everything is written to `example/work/`. The inferred haplotypes are
 
 | File | Contents |
 |---|---|
-| `data/graph_18_haps.tar.xz` | `graph_18_haps/panel/<hap>.fa`: MHC sequences of 18 HGSVC haplotypes. `graph_18_haps/bed/<hap>/<hap>_junctions.bed`: 438 1-bp junctions, one every 10 kb of GRCh38 MHC, lifted to each haplotype. `graph_18_haps/node_kmers_0.05_k31.tsv`: sampled k-mers of each graph node. |
-| `data/HG002.MHC_R{1,2}.10x.fastq.gz` | HG002 NIST Ashkenazi trio Illumina 2x250 bp reads. Cleaned with fastp, then pairs with both mates aligned to GRCh38 chr6:28510125-33480577, downsampled to 10x MHC depth. |
+| `data/graph_18_haps.tar.xz` | Supporting files for graph construction (haplotype FASTA, junction BEDs, sampled $k$-mers at each node). |
+| `data/HG002.MHC_R{1,2}.10x.fastq.gz` | HG002 NIST Ashkenazi trio Illumina 2x250 bp reads. Reads mapping to the GRCh38 MHC (chr6:28,510,125–33,480,577), downsampled to 10× mean depth.|
 
 ## Settings
 
