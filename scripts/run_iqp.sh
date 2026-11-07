@@ -73,7 +73,6 @@ cd "$OUTDIR"
   --graph "$GRAPH" \
   --sample "$SAMPLE" \
   --out_dir "$OUTDIR" \
-  --rel_weights "$rel_weights" \
   > "$OUTDIR/${SAMPLE}_${rel_weights}.log" 2>&1 \
   || { echo "IQP failed, see $OUTDIR/${SAMPLE}_${rel_weights}.log" >&2; exit 1; }
 

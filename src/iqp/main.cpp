@@ -145,7 +145,6 @@ int run(int argc, char *argv[]){
     bool write_regions = false; // off for now; --write_regions writes *_haplotype_regions.tsv
 
     std::string out_dir      = ".";
-    std::string rel_weights  = "";
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -157,8 +156,7 @@ int run(int argc, char *argv[]){
         else if (arg == "--graph" && i + 1 < argc)  GRAPH_FILE = argv[++i];
         else if (arg == "--sample" && i + 1 < argc) sample_name = argv[++i];
         else if (arg == "--write_regions")           write_regions = true;
-        else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];  
-        else if (arg == "--rel_weights" && i + 1 < argc) rel_weights = argv[++i];
+        else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];
     }
 
     if (GRAPH_KMERS_FILE.empty() || SK_FILE.empty() || GRAPH_FILE.empty()) {
