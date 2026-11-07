@@ -61,6 +61,8 @@ bash scripts/infer_haplotypes.sh \
   -g graph_18_haps -outdir DiGi_TestRun -outname HG002
 ```
 
+When the run finishes, the two inferred haplotypes are in `DiGi_TestRun/HG002_hap1.fa` and `DiGi_TestRun/HG002_hap2.fa`. The folder also holds the solver logs and, under `reads/`, intermediate read k-mers, which you can ignore.
+
 ## Algorithm overview
 
 DiGi formulates diploid genome inference as an integer quadratic program (IQP) that jointly reconstructs two haplotypes as mosaic paths through the pangenome graph. The optimization balances agreement between the inferred haplotypes and observed read $k$-mers while limiting recombinations between reference haplotypes.
