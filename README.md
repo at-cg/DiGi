@@ -17,7 +17,7 @@ export GRB_LICENSE_FILE=/path/to/gurobi.lic
 bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
 ## Usage
 <!-- A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**). -->
-Two graph representations, one a small example and the other the main reference used in the paper, are available on [Zenodo](https://zenodo.org/records/23974110), along with the reference and test MHC assemblies. Download *graph_18_haps.tar.gz* or *graph_108_haps.tar.gz* into the `<graph_dir>` folder before running the code.
+Two pre-built haplotype graphs are available on [Zenodo](https://zenodo.org/records/23974110): a small example (18 haplotypes) and the main reference used in the paper (108 haplotypes), along with the reference and test MHC assemblies. Before running, download and extract `graph_18_haps.tar.gz` or `graph_108_haps.tar.gz`, then pass the extracted folder as `<graph_dir>`.
 ```bash
 # Inference
 bash scripts/infer_haplotypes.sh -r1 R1.fastq -r2 R2.fastq -g <graph_dir> -outdir <out_dir> -outname <prefix> 
