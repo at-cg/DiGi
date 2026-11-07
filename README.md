@@ -30,7 +30,7 @@ DiGi reads your Gurobi license from the `GRB_LICENSE_FILE` environment variable.
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 ```
 
-To avoid running this command in every new session, add it to your `~/.bashrc`.
+Optional: To avoid running this command in every new session, add it to your `~/.bashrc`.
 
 
 ## General usage
