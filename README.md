@@ -23,8 +23,7 @@ DiGi reads your Gurobi license from the `GRB_LICENSE_FILE` environment variable.
 1. Register or log in at the [Gurobi Academic Program](https://www.gurobi.com/academics) with your institutional email address and request a **WLS Academic** license.
 2. Open the [Gurobi Web License Manager](https://license.gurobi.com/manager/licenses).
 3. Go to **API Keys** and create an API key for your WLS Academic license.
-4. Download the generated `gurobi.lic` file and save it somewhere permanent,
-    for example `~/gurobi.lic`.
+4. Download the generated `gurobi.lic` file.
 5. Point DiGi to it by using the following command:
 
 ```bash
@@ -65,5 +64,5 @@ bash scripts/infer_haplotypes.sh \
 ## Algorithm overview
 
 <p align="center">
-  <img src="docs/figures/digi_overview.png" width="100%" alt="Overview of the DiGi algorithm">
+  <img src="docs/figures/digi_overview.svg" width="100%" alt="Overview of the DiGi algorithm">
 </p>
