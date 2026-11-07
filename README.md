@@ -1,50 +1,69 @@
 # DiGi
-DiGi is a pangenome-based genome inference method. It is useful for genotyping and partial phasing of variants in the [MHC region](https://genome.ucsc.edu/cgi-bin/hgc?db=hg38&c=chr6&l=31944158&r=31944159&o=28510019&t=33480577&g=comments&i=MHC).
-Given a pangenome index of MHC reference haplotypes (e.g., from haplotype-resolved long-read assemblies) and short-reads of donor genome, DiGi infers two mosaic paths in the pangenome that are most consistent with donor's genome. It gives two fasta files as output, each corresponding to an inferred haplotype sequence from the pangenome. The user can use these outputs and either run [variant calling](https://github.com/EichlerLab/pav) or [gene annotation tools](https://github.com/YingZhou001/Immuannot) for downstream applications.
+DiGi is a pangenome-based genome inference method. It is useful for genotyping and phasing variants in the human [major histocompatibility complex (MHC)](https://genome.ucsc.edu/cgi-bin/hgc?db=hg38&c=chr6&l=31944158&r=31944159&o=28510019&t=33480577&g=comments&i=MHC). Given a pangenome graph of MHC reference haplotypes (e.g., from haplotype-resolved long-read assemblies) and short reads of a donor genome, DiGi infers two mosaic paths in the pangenome that best explain the reads. It outputs two FASTA files, one per inferred haplotype. These can be passed to variant-calling tools such as [PAV](https://github.com/EichlerLab/pav) or gene-annotation tools such as [Immuannot](https://github.com/YingZhou001/Immuannot) for downstream analysis.
 
-> DiGi needs a Gurobi license to solve the integer program during inference. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
+> DiGi needs a Gurobi license to solve its integer program. Free academic licenses are available at [gurobi.com/academics](https://www.gurobi.com/academics).
+
+> Phasing is reliable within genes but may contain switch errors over long distances, so the two output haplotypes should not be assumed to be phased across the full MHC.
 
 ## Installation
-
 Requires Linux (x86-64) and GCC 8.3 or newer.
 
+### Download source code and compile
 ```bash
-git clone https://github.com/at-cg/DiGi.git && cd DiGi
+git clone https://github.com/at-cg/DiGi.git
+cd DiGi
 make
+```
+
+`make` also downloads the external dependencies: [KMC](https://github.com/refresh-bio/KMC) and Gurobi
+
+### Gurobi license setup 
+DiGi reads your Gurobi license from the `GRB_LICENSE_FILE` environment variable. For academic use, a **WLS Academic** license works well and is easy to set up:
+
+1. Register or log in at the [Gurobi Academic Program](https://www.gurobi.com/academics) with your institutional email address and request a **WLS Academic** license.
+2. Open the [Gurobi Web License Manager](https://license.gurobi.com/manager/licenses).
+3. Go to **API Keys** and create an API key for your WLS Academic license.
+4. Download the generated `gurobi.lic` file and save it somewhere permanent,
+    for example `~/gurobi.lic`.
+5. Point DiGi to it by using the following command:
+
+```bash
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 ```
-<!-- # 1. Graph preprocessing
-bash scripts/preprocess_graph.sh <panel_dir> <bed_dir> <graph_dir> -->
-## Usage
-<!-- A sample reference graph (108 haplotype assemblies with 438 junctions, spaced roughly every 10 kb) is available on Zenodo(**!**). -->
-Two pre-built haplotype graphs are available on [Zenodo](https://zenodo.org/records/23974110): a small example (18 haplotypes) and the main reference used in the paper (108 haplotypes), along with the reference and test MHC assemblies. Before running, download and extract `graph_18_haps.tar.gz` or `graph_108_haps.tar.gz`, then pass the extracted folder as `<graph_dir>`.
-```bash
-# Inference
-bash scripts/infer_haplotypes.sh -r1 R1.fastq -r2 R2.fastq -g <graph_dir> -outdir <out_dir> -outname <prefix> 
-```
 
-example/data contains a small dataset in this format. `R1.fastq` and `R2.fastq` are paired-end reads filtered to the MHC region. As a result, `<prefix>_{1,2}_*.fa` are written to `<out_dir>`.
-<!-- Rerunning step 2 with the same `<out_dir>` skips read processing if the reads, FracMinHash fraction and k are unchanged, so only inference runs again. -->
-
-<!-- **Panel requirements.** `<panel_dir>` holds one `<hap>.fa` per assembly. Each FASTA must contain only the MHC region of that assembly, as a single sequence, not the whole genome, and all assemblies must share a common orientation. -->
-
-<!-- **Settings.** Each one is set with an environment variable:
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `FRACTION` | 0.05 | FracMinHash sampling fraction, the share of k-mers kept |
-| `K` | 31 | k-mer length |
-| `C1` | 5.2 | Penalty for a k-mer the path expects but the reads lack |
-| `C2` | 3.5 | Penalty for a read k-mer the path lacks | -->
+To avoid running this command in every new session, add it to your `~/.bashrc`.
 
 
-## Example
-
-Infers HG002's MHC haplotypes from 10x coverage reads, using an 18-haplotype graph (about 5 minutes on one CPU core):
+## General usage
+DiGi takes paired-end short reads and an MHC pangenome graph as input:
 
 ```bash
-mkdir -p example/work && tar -C example/work -xJf example/data/graph_18_haps.tar.xz
-bash scripts/infer_haplotypes.sh -r1 example/data/HG002.MHC_R1.10x.fastq.gz -r2 example/data/HG002.MHC_R2.10x.fastq.gz -g example/work/graph_18_haps -outdir example/work/inferred -outname HG002
+bash scripts/infer_haplotypes.sh -r1 read1.fq -r2 read2.fq -g <graph_dir> -outdir <out_dir> -outname <prefix> 
 ```
 
-See [`example/README.md`](example/README.md) for details.
+`read1.fq` and `read2.fq` should contain paired-end reads filtered to the MHC region. After a successful run, DiGi writes `<prefix>_hap1.fa` and `<prefix>_hap2.fa` to `<out_dir>`.
+
+A pre-built MHC pangenome graph of 54 individuals (108 haplotypes) is available on [Zenodo](https://zenodo.org/records/23974110). Download and extract the archive, then pass the extracted folder to `-g` as `<graph_dir>`.
+
+## Try DiGi on small data
+
+This example infers the MHC haplotypes of HG002 genome using a small graph. This run should take about five minutes.
+
+```bash
+# From the DiGi project folder
+# Download the small graph
+wget https://github.com/at-cg/DiGi/releases/download/v0.1/graph_18_haps.tar.gz
+tar -xzvf graph_18_haps.tar.gz
+
+# Run inference
+bash scripts/infer_haplotypes.sh \
+  -r1 example/data/HG002.MHC_R1.10x.fastq.gz \
+  -r2 example/data/HG002.MHC_R2.10x.fastq.gz \
+  -g graph_18_haps -outdir DiGi_TestRun -outname HG002
+```
+
+## Algorithm overview
+
+<p align="center">
+  <img src="docs/figures/digi_overview.png" width="100%" alt="Overview of the DiGi algorithm">
+</p>

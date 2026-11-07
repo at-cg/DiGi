@@ -9,13 +9,28 @@
 #   THREADS, C1 and C2 can be set as environment variables. C1 and C2 default to cost
 #   parameters estimated from the reads' coverage and length (see run_iqp.sh).
 #   Needs bin/dip_iqp (make) and a Gurobi license.
-# -> <out_dir>/<prefix>_{1,2}_*.fa, <out_dir>/reads (read k-mers)
+# -> <out_dir>/<prefix>_{hap1,hap2}.fa, <out_dir>/reads (read k-mers)
 
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 -r1 <R1> -r2 <R2> -g <graph_dir> -outdir <out_dir> -outname <prefix> [-R <recombination_per_haplotype>]" >&2
-    exit 1
+  local PROG
+  PROG="$(basename "$0")"
+  cat >&2 <<EOF
+Infer the two MHC haplotypes of a sample from paired-end reads.
+
+Usage: $PROG -r1 <read1.fq> -r2 <read2.fq> -g <graph_dir> -outdir <dir> -outname <prefix> [-R <int>]
+
+Required:
+  -r1, -r2    paired-end reads (FASTQ, optionally gzipped) filtered to the MHC region
+  -g          graph folder
+  -outdir     output directory
+  -outname    prefix of the output files
+Optional:
+  -R          max switches between reference haplotypes per inferred haplotype (default 10)
+  -h, --help  show this help
+EOF
+exit 1
 }
 
 R1=""

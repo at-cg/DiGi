@@ -12,7 +12,7 @@
 #   R (max recombinations per haplotype, default 10) can also be set.
 #   All of these are environment variables.
 #   Needs bin/dip_iqp (make) and a Gurobi license (e.g. GRB_LICENSE_FILE or WLS variables).
-# -> <out_dir>/<sample>_{1,2}_<weights>.fa, <out_dir>/<sample>_<weights>.log
+# -> <out_dir>/<sample>_{hap1,hap2}.fa, <out_dir>/<sample>_<weights>.log
 
 set -euo pipefail
 

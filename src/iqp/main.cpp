@@ -470,8 +470,8 @@ int run(int argc, char *argv[]){
             };
 
             std::filesystem::create_directories(out_dir);
-            std::string file_path_1 = out_dir + "/" + sample_name + "_1_" + rel_weights + ".fa";
-            std::string file_path_2 = out_dir + "/" + sample_name + "_2_" + rel_weights + ".fa";
+            std::string file_path_1 = out_dir + "/" + sample_name + "_hap1.fa";
+            std::string file_path_2 = out_dir + "/" + sample_name + "_hap2.fa";
 
             int n_recomb_1 = process_and_save_path(next_node_1, "1", file_path_1);
             int n_recomb_2 = process_and_save_path(next_node_2, "2", file_path_2);
