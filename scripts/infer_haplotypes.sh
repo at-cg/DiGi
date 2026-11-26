@@ -3,7 +3,7 @@
 # Usage: bash infer_haplotypes.sh -r1 <R1.fastq[.gz]> -r2 <R2.fastq[.gz]> -g <graph_dir> -outdir <out_dir>
 #                                 -outname <prefix> [-R <recombination_per_haplotype>]
 #   r1, r2: paired-end reads filtered to the MHC region
-#   g: graph folder holding panel/, bed/ and node_kmers_0.05_k31.tsv
+#   g: graph folder holding graph.gfa and node_kmers_0.05_k31.tsv
 #   outname: prefix of the output files
 #   R: maximum switches between reference haplotypes per inferred haplotype (default 10)
 #   THREADS, C1 and C2 can be set as environment variables. C1 and C2 default to cost
@@ -23,7 +23,7 @@ Usage: $PROG -r1 <read1.fq> -r2 <read2.fq> -g <graph_dir> -outdir <dir> -outname
 
 Required:
   -r1, -r2    paired-end reads (FASTQ, optionally gzipped) filtered to the MHC region
-  -g          graph folder
+  -g          graph folder holding graph.gfa and node_kmers_0.05_k31.tsv
   -outdir     output directory
   -outname    prefix of the output files
 Optional:
@@ -56,9 +56,9 @@ done
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Fail before read processing if the graph is not there
-[ -d "$GRAPH_DIR/panel" ] || { echo "missing $GRAPH_DIR/panel" >&2; exit 1; }
-[ -d "$GRAPH_DIR/bed" ] || { echo "missing $GRAPH_DIR/bed" >&2; exit 1; }
-[ -s "$GRAPH_DIR/node_kmers_0.05_k31.tsv" ] || { echo "missing $GRAPH_DIR/node_kmers_0.05_k31.tsv" >&2; exit 1; }
+for f in graph.gfa node_kmers_0.05_k31.tsv; do
+    [ -s "$GRAPH_DIR/$f" ] || { echo "missing $GRAPH_DIR/$f" >&2; exit 1; }
+done
 
 echo "Read input files: $R1, $R2"
 echo "=== Step 1/2: Read processing ==="

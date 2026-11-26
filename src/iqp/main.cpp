@@ -9,9 +9,9 @@
 #include <string>
 #include <filesystem>
 #include <thread>
+#include <unordered_map>
 
 #include "gurobi_c++.h"
-#include "../graph/graph_file.hpp"
 
 // --- Graph Structure ---
 class Graph{
@@ -25,6 +25,135 @@ class Graph{
 // --- Graph Structure Methods ---
 Graph::Graph(int n): n(n), adj(n) {}
 void Graph::addEdge(int u, int v){ adj[u].push_back(v); }
+
+// --- GFA graph (construct_graph/src/gfa_const.cpp) ---
+// Segments get indices 1..N in file order; 0 is the source and N+1 the sink, added
+// here: the source links to every segment without incoming links, and every segment
+// without outgoing links links to the sink. A segment with an hp:Z:<haplotype> tag
+// is a haplotype node (rr:Z:<start>-<end> is its range on that haplotype); one
+// without is a junction, and passing through it is a recombination.
+// Only the graph is kept in memory; segment sequences are read after solving, for
+// the nodes on the two paths (loadSegmentSequences).
+struct GfaGraph {
+    int N = 0;                                     // segments
+    int sink = 0;                                  // N + 1
+    std::vector<std::string> name;                 // by index, "" for source and sink
+    std::unordered_map<std::string, int> index;    // segment name -> index
+    std::vector<int> hap;                          // haplotype number, -1 for junctions
+    std::vector<long long> start, end;             // rr range, -1 if absent
+    std::vector<std::string> hap_names;            // in order of first appearance
+    std::vector<std::vector<int>> adj;             // links, plus source and sink edges
+};
+
+// Tab-separated fields of a GFA line, as [begin, end) offsets
+static std::vector<std::pair<size_t, size_t>> gfaFields(const std::string& line) {
+    std::vector<std::pair<size_t, size_t>> f;
+    size_t b = 0;
+    while (true) {
+        size_t e = line.find('\t', b);
+        if (e == std::string::npos) { f.emplace_back(b, line.size()); break; }
+        f.emplace_back(b, e);
+        b = e + 1;
+    }
+    return f;
+}
+
+GfaGraph loadGfa(const std::string& path) {
+    std::ifstream fin(path);
+    if (!fin.is_open()) throw std::runtime_error("Cannot open GFA: " + path);
+
+    GfaGraph g;
+    g.name.push_back("");  // source
+    g.hap.push_back(-1); g.start.push_back(-1); g.end.push_back(-1);
+    std::unordered_map<std::string, int> hap_index;
+    std::vector<std::pair<std::string, std::string>> links;
+
+    std::string line;
+    while (std::getline(fin, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (line.size() < 2 || line[1] != '\t') continue;
+        const auto f = gfaFields(line);
+        auto field = [&](size_t i) { return line.substr(f[i].first, f[i].second - f[i].first); };
+
+        if (line[0] == 'S') {
+            if (f.size() < 3) throw std::runtime_error("Short S line in " + path);
+            const std::string seg = field(1);
+            if (!g.index.emplace(seg, static_cast<int>(g.name.size())).second)
+                throw std::runtime_error("Duplicate segment " + seg + " in " + path);
+            g.name.push_back(seg);
+            int hp = -1;
+            long long s = -1, e = -1;
+            for (size_t i = 3; i < f.size(); ++i) {
+                const std::string tag = field(i);
+                if (tag.rfind("hp:Z:", 0) == 0) {
+                    auto it = hap_index.emplace(tag.substr(5), static_cast<int>(g.hap_names.size())).first;
+                    if (it->second == static_cast<int>(g.hap_names.size())) g.hap_names.push_back(tag.substr(5));
+                    hp = it->second;
+                } else if (tag.rfind("rr:Z:", 0) == 0) {
+                    const size_t dash = tag.find('-', 5);
+                    if (dash == std::string::npos) throw std::runtime_error("Bad rr tag on segment " + seg);
+                    s = std::stoll(tag.substr(5, dash - 5));
+                    e = std::stoll(tag.substr(dash + 1));
+                }
+            }
+            g.hap.push_back(hp); g.start.push_back(s); g.end.push_back(e);
+        } else if (line[0] == 'L') {
+            if (f.size() < 5) throw std::runtime_error("Short L line in " + path);
+            if (field(2) != "+" || field(4) != "+")
+                throw std::runtime_error("Only + to + links are supported: " + field(1) + " -> " + field(3));
+            links.emplace_back(field(1), field(3));
+        }
+    }
+    g.N = static_cast<int>(g.name.size()) - 1;
+    if (g.N == 0) throw std::runtime_error("No segments in " + path);
+    g.sink = g.N + 1;
+    g.name.push_back("");  // sink
+    g.hap.push_back(-1); g.start.push_back(-1); g.end.push_back(-1);
+
+    g.adj.assign(g.N + 2, {});
+    std::vector<char> has_in(g.N + 2, 0), has_out(g.N + 2, 0);
+    for (const auto& [from, to] : links) {
+        auto u = g.index.find(from), v = g.index.find(to);
+        if (u == g.index.end() || v == g.index.end())
+            throw std::runtime_error("Link to an unknown segment: " + from + " -> " + to);
+        g.adj[u->second].push_back(v->second);
+        has_out[u->second] = has_in[v->second] = 1;
+    }
+    for (int i = 1; i <= g.N; ++i) {
+        if (!has_in[i]) g.adj[0].push_back(i);
+        if (!has_out[i]) g.adj[i].push_back(g.sink);
+    }
+    if (g.adj[0].empty()) throw std::runtime_error("Every segment has an incoming link (cycle?) in " + path);
+    return g;
+}
+
+// Sequences of the given segments (by index), read from the GFA
+std::map<int, std::string> loadSegmentSequences(const std::string& path, const GfaGraph& g,
+                                                const std::set<int>& wanted) {
+    std::ifstream fin(path);
+    if (!fin.is_open()) throw std::runtime_error("Cannot open GFA: " + path);
+    std::map<int, std::string> seqs;
+    std::string line;
+    while (seqs.size() < wanted.size() && std::getline(fin, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (line.size() < 2 || line[0] != 'S' || line[1] != '\t') continue;
+        const size_t t1 = line.find('\t', 2);
+        if (t1 == std::string::npos) continue;
+        const int idx = g.index.at(line.substr(2, t1 - 2));
+        if (!wanted.count(idx)) continue;
+        size_t t2 = line.find('\t', t1 + 1);
+        if (t2 == std::string::npos) t2 = line.size();
+        std::string seq = line.substr(t1 + 1, t2 - t1 - 1);
+        if (seq == "*") {
+            if (g.end[idx] > g.start[idx])
+                throw std::runtime_error("Segment " + g.name[idx] + " has no sequence in " + path +
+                                         " (written with gfa_const --no-seq?)");
+            seq.clear();
+        }
+        seqs.emplace(idx, std::move(seq));
+    }
+    return seqs;
+}
 
 // 1. Load Target Read K-mers (Sk) as an unordered_set (ignoring frequencies)
 std::unordered_set<std::string> loadSk(const std::string& sk_file) {
@@ -48,12 +177,13 @@ std::unordered_set<std::string> loadSk(const std::string& sk_file) {
     return Sk;
 }
 
-// 2. Process Graph K-mer file in format: <node_id>\t<multiset of kmers>
+// 2. Process Graph K-mer file in format: <segment name>\t<multiset of kmers>
+//    (construct_graph/src/node_kmer_sampler.cpp); every name must be a GFA segment
 void processGraphKmers(const std::string& graph_file,
                        const std::unordered_set<std::string>& Sk,
                        std::map<std::string, std::vector<int>>& targetKmerToNodes,
                        std::vector<uint32_t>& novel_kmer_count,
-                       int num_nodes)
+                       const std::unordered_map<std::string, int>& segment_index)
 {
     std::ifstream file(graph_file);
     if (!file.is_open()) throw std::runtime_error("Cannot open Graph Kmers: " + graph_file);
@@ -72,14 +202,10 @@ void processGraphKmers(const std::string& graph_file,
             if (tab_pos == std::string::npos) continue;
         }
 
-        int node_id = -1;
-        try {
-            node_id = std::stoi(line.substr(0, tab_pos));
-        } catch (...) {
-            continue;
-        }
-
-        if (node_id < 0 || node_id >= num_nodes) continue; 
+        auto seg = segment_index.find(line.substr(0, tab_pos));
+        if (seg == segment_index.end())
+            throw std::runtime_error("Node k-mers name a segment that is not in the GFA: " + line.substr(0, tab_pos));
+        const int node_id = seg->second;
 
         std::string kmers_str = line.substr(tab_pos + 1);
 
@@ -118,20 +244,6 @@ void processGraphKmers(const std::string& graph_file,
     }
 }
 
-// Maps a lattice node id back to (row, col). Returns (-1,-1) for the source,
-// sink, or a junction node, none of which belong to a single haplotype.
-std::pair<int,int> latticeRowCol(int node_id, int H, int r, int sink) {
-    if (node_id == 0 || node_id == sink) return {-1, -1};
-    int junction_start = H * (r + 1) + 1;
-    int junction_end   = H * (r + 1) + r; // inclusive
-    if (node_id >= junction_start && node_id <= junction_end) return {-1, -1};
-    int idx = node_id - 1;
-    int row = idx / (r + 1);
-    int col = idx % (r + 1);
-    if (row >= H) return {-1, -1};
-    return {row, col};
-}
-
 int run(int argc, char *argv[]){
     auto start = std::chrono::high_resolution_clock::now();
     std::string GRAPH_KMERS_FILE = "";
@@ -140,7 +252,7 @@ int run(int argc, char *argv[]){
     // Recombinations carry no objective cost; they are only limited by the --R budget.
     double c1 = 1.0, c2 = 1.0;
     int R = -1;
-    std::string GRAPH_FILE = "";
+    std::string GFA_FILE = "";
     std::string sample_name      = "Sample";
     bool write_regions = false; // off for now; --write_regions writes *_haplotype_regions.tsv
 
@@ -153,40 +265,28 @@ int run(int argc, char *argv[]){
         else if (arg == "--c1" && i + 1 < argc)     c1 = std::stod(argv[++i]);
         else if (arg == "--c2" && i + 1 < argc)     c2 = std::stod(argv[++i]);
         else if (arg == "--R" && i + 1 < argc)      R = std::stoi(argv[++i]);  
-        else if (arg == "--graph" && i + 1 < argc)  GRAPH_FILE = argv[++i];
+        else if (arg == "--gfa" && i + 1 < argc)    GFA_FILE = argv[++i];
         else if (arg == "--sample" && i + 1 < argc) sample_name = argv[++i];
         else if (arg == "--write_regions")           write_regions = true;
         else if (arg == "--out_dir" && i + 1 < argc) out_dir = argv[++i];
     }
 
-    if (GRAPH_KMERS_FILE.empty() || SK_FILE.empty() || GRAPH_FILE.empty()) {
-        std::cerr << "Usage: " << argv[0] << " --graph_kmers <file> --sk <file> --graph <graph_dir> [--R <int>] [options]\n";
+    if (GRAPH_KMERS_FILE.empty() || SK_FILE.empty() || GFA_FILE.empty()) {
+        std::cerr << "Usage: " << argv[0] << " --graph_kmers <file> --sk <file> --gfa <graph.gfa> [--R <int>] [options]\n";
         return 1;
     }
 
-    const HaplotypeGraph graph = loadGraph(GRAPH_FILE);
-    const int H = graph.H, r = graph.r;
-    std::cout << "Graph: H=" << H << ", r=" << r << "\n";
-    std::cout << "Graph read: (haplotypes: " << H << ", junctions: " << r << ")\n";
+    const GfaGraph gfa = loadGfa(GFA_FILE);
+    const int sink = gfa.sink;
+    int n_junctions = 0;
+    for (int i = 1; i <= gfa.N; ++i) n_junctions += gfa.hap[i] < 0;
+    std::cout << "Graph read: (haplotypes: " << gfa.hap_names.size() << ", junctions: " << n_junctions
+              << ", segments: " << gfa.N << ")\n";
 
-    const int n = H * (r + 1) + r + 2;
-    int sink = H * (r + 1) + r + 1;
-    Graph g(n);
-    // Build Graph
-    for(int row = 0; row < H; row++){
-        g.addEdge(0, row*(r+1) + 1);    // source-to-first-column edges
-        g.addEdge(row*(r+1) + r + 1, sink); // last-column-to-sink edges
-    }
-    for(int row = 0; row < H; row++){
-        for(int col = 0; col < r; col++) g.addEdge(row*(r+1) + col + 1, row*(r+1) + col + 2); // zero-weight edges along each haplotype row
-    }
-    for(int recomb = 0; recomb < r; ++recomb){
-        int w_node = H*(r+1) + recomb + 1;
-        for(int row = 0; row < H; row++){
-            g.addEdge(row*(r+1) + recomb + 1, w_node);  // haplotype-to-junction edges
-            g.addEdge(w_node, row*(r+1) + recomb + 2);  // junction-to-haplotype edges
-        }
-    }
+    // Build Graph: GFA links plus source and sink edges
+    Graph g(gfa.N + 2);
+    for (int u = 0; u < g.n; ++u)
+        for (int v : gfa.adj[u]) g.addEdge(u, v);
 
     // --- PIPELINE EXECUTION ---
     std::cout << "Loading Target Kmers...\n";
@@ -196,7 +296,7 @@ int run(int argc, char *argv[]){
     std::map<std::string, std::vector<int>> kmerToNodes;
     std::vector<uint32_t> novel_kmer_count(g.n, 0);
 
-    processGraphKmers(GRAPH_KMERS_FILE, Sk, kmerToNodes, novel_kmer_count, g.n);
+    processGraphKmers(GRAPH_KMERS_FILE, Sk, kmerToNodes, novel_kmer_count, gfa.index);
 
     // --- GUROBI MODEL ---
     int exit_code = 0;
@@ -226,7 +326,7 @@ int run(int argc, char *argv[]){
         std::vector<std::pair<int,int>> edge_list;
         std::vector<std::vector<int>> out_edge_idx1(g.n), in_edge_idx1(g.n);
         std::vector<std::vector<int>> out_edge_idx2(g.n), in_edge_idx2(g.n);
-        auto is_junction = [&](int node) { return node > H*(r+1) && node != sink; };
+        auto is_junction = [&](int node) { return node != 0 && node != sink && gfa.hap[node] < 0; };
         auto recomb_weight = [&](int u, int v) { return (is_junction(u) || is_junction(v)) ? 0.5 : 0.0; };    // assign weight 1/2 to each recombination edge, so that the total recombination count is the sum of weights along the path
         std::vector<double> edge_w;
 
@@ -323,6 +423,18 @@ int run(int argc, char *argv[]){
                 }
             }
 
+            // Sequences of the segments on either path, read from the GFA in one pass.
+            // Each path is walked with its own visited set: the two paths may share nodes.
+            std::set<int> on_paths;
+            for (const auto* next_node : {&next_node_1, &next_node_2}) {
+                std::set<int> visited;
+                for (int curr = 0; next_node->count(curr) && visited.insert(next_node->at(curr)).second; ) {
+                    curr = next_node->at(curr);
+                    if (curr != sink) on_paths.insert(curr);
+                }
+            }
+            const std::map<int, std::string> path_seqs = loadSegmentSequences(GFA_FILE, gfa, on_paths);
+
             auto process_and_save_path = [&](const std::map<int,int>& next_node,
                                              const std::string& tag,
                                              const std::string& out_filename) -> int {
@@ -362,7 +474,7 @@ int run(int argc, char *argv[]){
 
                     std::cout << " -> " << next;
 
-                    if (next > H*(r+1) && next != t) {
+                    if (is_junction(next)) {
                         n_recomb++;
                     }
 
@@ -378,7 +490,7 @@ int run(int argc, char *argv[]){
                     // Debug check: every junction visit should be a real switch to a different row
                     int n_switches = 0, prev_row = -1;
                     for (int node_id : path_nodes) {
-                        int row = latticeRowCol(node_id, H, r, t).first;
+                        int row = gfa.hap[node_id];
                         if (row < 0) continue;
                         if (prev_row >= 0 && row != prev_row) n_switches++;
                         prev_row = row;
@@ -389,15 +501,12 @@ int run(int argc, char *argv[]){
                     }
 
                     std::string sequence;
-                    std::map<int, std::string> assemblies; // only the rows on this path
                     for (int node_id : path_nodes) {
-                        auto [row, col] = latticeRowCol(node_id, H, r, t);
-                        if (row < 0) continue; // source / sink / junction
-                        const GraphHaplotype& hap = graph.haps[row];
-                        auto it = assemblies.find(row);
-                        if (it == assemblies.end())
-                            it = assemblies.emplace(row, loadHaplotypeSequence(hap)).first;
-                        sequence.append(it->second, hap.pos[col], hap.pos[col + 1] - hap.pos[col]);
+                        if (node_id == src || node_id == t) continue; // source / sink have no sequence
+                        auto it = path_seqs.find(node_id);
+                        if (it == path_seqs.end())
+                            throw std::runtime_error("No sequence loaded for segment " + gfa.name[node_id]);
+                        sequence += it->second;
                     }
 
                     std::ofstream fout(out_filename);
@@ -430,17 +539,19 @@ int run(int argc, char *argv[]){
 
                             auto flush_segment = [&]() {
                                 if (seg_row >= 0) {
-                                    rout << seg_start << "\t" << seg_end << "\t" << graph.haps[seg_row].name
+                                    rout << seg_start << "\t" << seg_end << "\t" << gfa.hap_names[seg_row]
                                          << "\t" << seg_row << "\t" << seg_cols << "\n";
                                 }
                             };
 
                             for (int node_id : path_nodes) {
-                                auto [row, col] = latticeRowCol(node_id, H, r, t);
+                                int row = gfa.hap[node_id];
                                 if (row < 0) continue; // source / sink / junction
 
-                                long long node_start = graph.haps[row].pos[col];
-                                long long node_end   = graph.haps[row].pos[col + 1];
+                                long long node_start = gfa.start[node_id];
+                                long long node_end   = gfa.end[node_id];
+                                if (node_start < 0)
+                                    throw std::runtime_error("Segment " + gfa.name[node_id] + " has no rr:Z: tag");
 
                                 if (row != seg_row) {
                                     flush_segment();

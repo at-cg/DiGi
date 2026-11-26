@@ -2,6 +2,8 @@
 #   make         k-mer set sampler, IQP solver and KMC. Needs Linux x86-64 and
 #                GCC 8 or newer. Uses the Gurobi install in GUROBI_HOME if set,
 #                otherwise downloads Gurobi into extra/. Downloads KMC into bin/.
+#   make graph   tools for construct_graph/scripts/liftover.sh (nf-LO, CrossMap) into
+#                construct_graph/bin/, see construct_graph/Makefile. Not part of `make`.
 #   make clean   remove bin/
 
 CXX      ?= g++
@@ -22,7 +24,7 @@ bin/kmc: | bin
 bin/kmer_set_sampling: src/kmer_sampling/kmer_set_sampling.cpp | bin
 	$(CXX) $(CXXFLAGS) $< -o $@
 
-bin/dip_iqp: src/iqp/main.cpp src/graph/graph_file.hpp | bin
+bin/dip_iqp: src/iqp/main.cpp | bin
 	@[ -d "$(GUROBI_HOME)" ] || [ "$(origin GUROBI_HOME)" != file ] \
 	  || { mkdir -p extra && curl -fL $(GUROBI_URL) | tar -xz -C extra; }
 	grb_lib=$$(basename "$$(ls "$(GUROBI_HOME)"/lib/libgurobi[0-9]*.so | grep -v _light | head -1)" .so); \
@@ -30,10 +32,13 @@ bin/dip_iqp: src/iqp/main.cpp src/graph/graph_file.hpp | bin
 	$(CXX) $(CXXFLAGS) $< -o $@ -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib \
 	  -Wl,-rpath,$(GUROBI_HOME)/lib -lgurobi_c++ -l$${grb_lib#lib} -lstdc++fs
 
+graph:
+	$(MAKE) -C construct_graph
+
 bin:
 	mkdir -p bin
 
 clean:
 	rm -rf bin
 
-.PHONY: all clean
+.PHONY: all graph clean

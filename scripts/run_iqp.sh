@@ -3,7 +3,7 @@
 # Infer a sample's two MHC haplotypes with the recombination-capped IQP
 # (src/iqp/main.cpp) from its read k-mers and the graph node k-mers.
 # Usage: bash run_iqp.sh <graph_dir> <reads_dir> <sample> <out_dir>
-#   graph_dir holds panel/, bed/ and node_kmers_0.05_k31.tsv.
+#   graph_dir holds graph.gfa and node_kmers_0.05_k31.tsv (construct_graph/scripts/liftover.sh).
 #   reads_dir is the out_dir of process_reads.sh, holding
 #   <sample>_read_kmers_0.05_k31.{tsv,stats}.
 #   C1 (missing k-mer penalty) and C2 (novel k-mer penalty) default to cost parameters
@@ -28,10 +28,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN="$ROOT/bin/dip_iqp"
 [ -x "$BIN" ] || { echo "missing $BIN, run make in $ROOT first" >&2; exit 1; }
 
+GFA="$GRAPH/graph.gfa"
 GK="$GRAPH/node_kmers_${fraction}_k${k}.tsv"
 SK="$READS_DIR/${SAMPLE}_read_kmers_${fraction}_k${k}.tsv"
 
-for f in "$GRAPH" "$GK" "$SK"; do
+for f in "$GFA" "$GK" "$SK"; do
     [ -s "$f" ] || { echo "missing $f" >&2; exit 1; }
 done
 
@@ -70,7 +71,7 @@ cd "$OUTDIR"
   --sk "$SK" \
   --c1 "$c1" --c2 "$c2" \
   --R "$R" \
-  --graph "$GRAPH" \
+  --gfa "$GFA" \
   --sample "$SAMPLE" \
   --out_dir "$OUTDIR" \
   > "$OUTDIR/${SAMPLE}_${rel_weights}.log" 2>&1 \

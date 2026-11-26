@@ -40,7 +40,7 @@ DiGi takes paired-end short reads and an MHC pangenome graph as input:
 bash scripts/infer_haplotypes.sh -r1 read1.fq -r2 read2.fq -g <graph_dir> -outdir <out_dir> -outname <prefix> 
 ```
 
-`read1.fq` and `read2.fq` should contain paired-end reads filtered to the MHC region. After a successful run, DiGi writes `<prefix>_hap1.fa` and `<prefix>_hap2.fa` to `<out_dir>`.
+`read1.fq` and `read2.fq` should contain paired-end reads filtered to the MHC region. `<graph_dir>` holds the graph (`graph.gfa`) and its sampled node k-mers (`node_kmers_0.05_k31.tsv`); `construct_graph/scripts/liftover.sh` builds such a folder from haplotype assemblies. After a successful run, DiGi writes `<prefix>_hap1.fa` and `<prefix>_hap2.fa` to `<out_dir>`.
 
 A pre-built MHC pangenome graph of 54 individuals (108 haplotypes) is available on [Zenodo](https://zenodo.org/records/23974110). Download and extract the archive, then pass the extracted folder to `-g` as `<graph_dir>`.
 
