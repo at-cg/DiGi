@@ -20,4 +20,11 @@ bash construct_graph/scripts/liftover.sh <ref.fa> <fasta_dir> <spacing_bp> <outd
 - `<spacing_bp>`: junction spacing on the linear reference, in bp (e.g. `10000`)
 - `<outdir>`: output graph folder, to pass to `scripts/infer_haplotypes.sh -g`
 
-Only the first sequence of each FASTA file is used.
+**Note:** Only the first sequence of each FASTA file is used.
+
+If `make graph` fails to verify a certificate, install a newer certificate list with pip and pass it as `CA_BUNDLE`:
+
+```bash
+pip install --upgrade certifi
+make graph CA_BUNDLE=$(python3 -m certifi)
+```
